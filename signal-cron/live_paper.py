@@ -343,7 +343,7 @@ def write_feed(st, market):
         },
         "market": [{"sym": s, "price": market.get((s, "px"), 0),
                     "dss4": market.get((s, "4h_dss"), 0), "dss1": market.get((s, "1d_dss"), 0),
-                    "vol": 0, "range24": 0, "trade": True}
+                    "vol": market.get((s, "vol"), 0), "range24": 0, "trade": True}
                    for s in sorted({s for s, _, _ in SLEEVES})],
         "positions": [{"sym": k.split("_")[0], "tf": k.split("_")[1], "entry": p["entry"],
                        "mark": market.get((k.split("_")[0], "px"), p["entry"]),
@@ -368,7 +368,14 @@ def market_snapshot():
             market[(s, "px")] = price(s)
         except Exception as e:
             print("price gagal", s, e, flush=True)
-    # cash 1W BTC
+    # volume 24h semua pair (untuk ukuran bola dashboard)
+    try:
+        tk = get(f"{BASE}/api/v3/ticker/24hr")
+        for x in tk:
+            if isinstance(x, dict) and x.get("symbol", "").endswith("USDT"):
+                market[(x["symbol"], "vol")] = float(x.get("quoteVolume", 0) or 0)
+    except Exception as e:
+        print("volume gagal:", e, flush=True)
     try:
         d = klines("BTCUSDT", "1d", 500)
         import pandas as pd

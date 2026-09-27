@@ -257,7 +257,7 @@
       var m = null;
       (market || []).forEach(function (x) { if (x.sym === p.sym) m = x; });
       p.m = m;
-      p.r = m ? (5 + 13 * Math.log(1 + (m.vol || 0) / (vmax || 1) * 9) / Math.log(10)) : 5;
+      p.r = m ? (7 + 16 * Math.log(1 + (m.vol || 0) / (vmax || 1) * 9) / Math.log(10)) : 7;
     });
     var dpr = fit(cv), ctx = cv.getContext("2d");
     ctx.scale(dpr, dpr);
