@@ -121,8 +121,8 @@
       if (wp) wp.scrollTop = wp.scrollHeight;
     }
     // (panel volBars diganti CROSS — blok dihapus)
-    drawBtc(d.btc1m || []);
-    drawCross(d.dssX || {});
+    drawBtc(window.__liveBtc || d.btc1m || []);
+    drawCross(window.__liveDss || d.dssX || {});
     seedField(mood, (d.positions || []).length, d.market || []);
   }
 
