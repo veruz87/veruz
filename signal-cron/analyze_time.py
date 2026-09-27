@@ -1,0 +1,15 @@
+import pandas as pd
+tr = pd.read_csv("results/trades_DSSLP_BTCUSDT_4h.csv", parse_dates=["entry_time", "exit_time"])
+tr["y"] = tr.exit_time.dt.year
+tr["ym"] = tr.exit_time.dt.to_period("M")
+print("=== PER TAHUN ===")
+print(tr.groupby("y")["ret_eq"].agg(["count", "mean", "sum"]).round(3).to_string())
+print()
+print("=== WINRATE PER TAHUN ===")
+print(tr.groupby("y").apply(lambda d: round((d.reason == "TP").mean() * 100, 1), include_groups=False).to_string())
+print()
+print("=== 10 BULAN PALING RUGI ===")
+print(tr.groupby("ym")["ret_eq"].agg(["count", "sum", "mean"]).round(3).sort_values("sum").head(10).to_string())
+print()
+print("=== 10 BULAN PALING UNTUNG ===")
+print(tr.groupby("ym")["ret_eq"].agg(["count", "sum", "mean"]).round(3).sort_values("sum").tail(10).to_string())

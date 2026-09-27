@@ -1,0 +1,25 @@
+import pandas as pd
+tr = pd.read_csv("results/trades_DSSLP_BTCUSDT_4h.csv", parse_dates=["entry_time", "exit_time"])
+sl = tr[tr.reason == "SL"]
+tp = tr[tr.reason == "TP"]
+print(f"TOTAL {len(tr)} SL {len(sl)} TP {len(tp)}")
+print("--- SL: mfe>=1 (hampir TP lalu balik) vs mfe<0.3 (langsung salah) ---")
+print("SL mfe>=1.0:", int((sl.mfe_r >= 1.0).sum()), round((sl.mfe_r >= 1.0).mean() * 100, 1), "%")
+print("SL mfe>=1.5:", int((sl.mfe_r >= 1.5).sum()))
+print("SL mfe<0.3:", int((sl.mfe_r < 0.3).sum()), round((sl.mfe_r < 0.3).mean() * 100, 1), "%")
+print(sl.mfe_r.describe().round(2).to_string())
+print("--- HOLD (jam) ---")
+print("SL median/mean:", sl.hold_hours.median(), round(sl.hold_hours.mean(), 1))
+print("TP median/mean:", tp.hold_hours.median(), round(tp.hold_hours.mean(), 1))
+print("SL hold>168 jam (nyangkut 7 hari):", int((sl.hold_hours > 168).sum()))
+print("TP hold<24 jam:", int((tp.hold_hours < 24).sum()))
+print("--- ENTRY SESSION WIB ---")
+print(tr.groupby(["in_dow"])["ret_eq"].agg(["count", "mean", "sum"]).round(3).to_string())
+print(tr.groupby(["in_hr_wib"])["ret_eq"].agg(["count", "mean", "sum"]).round(3).sort_values("sum").to_string())
+print("--- ENTRY DSS ---")
+print("long entry_dss median:", round(tr[tr.side == 1].entry_dss.median(), 1),
+      "| short:", round(tr[tr.side == -1].entry_dss.median(), 1))
+print(tr.groupby(pd.cut(tr.entry_dss, [0, 10, 20, 30, 70, 80, 90, 100]))["ret_eq"].agg(["count", "mean"]).round(3).to_string())
+print("--- MAE SL (stop terlalu ketat?) ---")
+print("SL mae median:", round(sl.mae_r.median(), 2), "(misal -1.0 = pas SL, <-1.2 = jebol jauh)")
+print("SL mae>-1.2 (keluar pas di SL):", int((sl.mae_r > -1.2).sum()))

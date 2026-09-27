@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIGNAL ROOM</title>
+<link rel="stylesheet" href="styles.css?v=8">
+</head>
+<body>
+<div id="room">
+  <header>
+    <div class="brand">SIGNAL ROOM<small>DSS-CROSS LONG ENGINE · LIVE</small></div>
+    <div id="clock">--:--:--</div>
+    <div id="fund" class="sub">FUND BTC —</div>
+    <div id="feeddot">● FEED</div>
+  </header>
+  <aside id="leftRail">
+  <div class="panel" id="pPairs"><h3>PAIRS <b>/ DSS</b></h3><div id="railPairs"></div></div>
+  <div class="panel" id="pWire"><h3>THE WIRE <b>/ WHALE+LIQ</b></h3><div id="wire"><div id="wireInner"></div></div></div>
+  </aside>
+  <section id="center">
+    <div class="panel" id="eqWrap">
+      <div id="eqRow">
+        <div class="eitem"><div class="k">EQUITY</div><div class="v big" id="eqNum">$0.00</div></div>
+        <div id="eqStats">—</div>
+      </div>
+    </div>
+    <div id="topRow">
+      <div class="panel" id="vidWrap">
+        <video id="bgvid" src="bg.mp4" autoplay muted loop playsinline></video>
+        <div id="vidTag">LIVE FEED</div>
+      </div>
+    </div>
+    <div id="midRow">
+      <div class="panel" id="plexWrap">
+        <h3>PLEXUS <b>/ VOLUME</b></h3>
+        <canvas id="field"></canvas>
+      </div>
+      <div class="panel" id="volWrap">
+        <h3>CROSS <b>/ DSS 1M</b></h3>
+        <canvas id="crossCanvas"></canvas>
+      </div>
+    </div>
+  </section>
+  <aside id="rightRail">
+    <div class="panel" id="pChart">
+      <h3>BTC <b>/ LIVE 1M</b></h3>
+      <div class="chartBox"><canvas id="btcCanvas"></canvas></div>
+    </div>
+    <div class="panel" id="pScan">
+      <h3>SCAN LOG <b>/ KEPUTUSAN BOT</b></h3>
+      <div id="stream"><div id="streamInner"></div></div>
+    </div>
+    <div class="panel" id="pPos">
+      <h3>POSITIONS <b>/ LIVE</b></h3>
+      <div style="overflow-y:auto"><table id="posTable2">
+        <tr><th>Sym</th><th>TF</th><th>PnL $</th></tr>
+      </table></div>
+    </div>
+  </aside>
+</div>
+<script src="app.js?v=8"></script>
+</body>
+</html>
