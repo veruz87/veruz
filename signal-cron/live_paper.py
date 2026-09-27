@@ -37,11 +37,26 @@ COOL_H = {"4h": 48, "1d": 288}
 
 SLEEVES = [
     ("BTCUSDT", "4h", 25.0), ("BTCUSDT", "1d", 25.0),
-    ("ETHUSDT", "4h", 5.0), ("ETHUSDT", "1d", 5.0),
-    ("SOLUSDT", "4h", 5.0), ("SOLUSDT", "1d", 5.0),
-    ("ZECUSDT", "4h", 5.0), ("ZECUSDT", "1d", 5.0),
-    ("BNBUSDT", "4h", 5.0), ("BNBUSDT", "1d", 5.0),
-    ("XRPUSDT", "4h", 5.0), ("XRPUSDT", "1d", 5.0),
+    ("ZECUSDT", "4h", 1.25), ("ZECUSDT", "1d", 1.25),
+    ("ETHUSDT", "4h", 1.25), ("ETHUSDT", "1d", 1.25),
+    ("SOLUSDT", "4h", 1.25), ("SOLUSDT", "1d", 1.25),
+    ("XRPUSDT", "4h", 1.25), ("XRPUSDT", "1d", 1.25),
+    ("NEARUSDT", "4h", 1.25), ("NEARUSDT", "1d", 1.25),
+    ("SUIUSDT", "4h", 1.25), ("SUIUSDT", "1d", 1.25),
+    ("WLDUSDT", "4h", 1.25), ("WLDUSDT", "1d", 1.25),
+    ("TAOUSDT", "4h", 1.25), ("TAOUSDT", "1d", 1.25),
+    ("AVAXUSDT", "4h", 1.25), ("AVAXUSDT", "1d", 1.25),
+    ("UNIUSDT", "4h", 1.25), ("UNIUSDT", "1d", 1.25),
+    ("DOGEUSDT", "4h", 1.25), ("DOGEUSDT", "1d", 1.25),
+    ("BNBUSDT", "4h", 1.25), ("BNBUSDT", "1d", 1.25),
+    ("RUNEUSDT", "4h", 1.25), ("RUNEUSDT", "1d", 1.25),
+    ("DASHUSDT", "4h", 1.25), ("DASHUSDT", "1d", 1.25),
+    ("ENAUSDT", "4h", 1.25), ("ENAUSDT", "1d", 1.25),
+    ("LINKUSDT", "4h", 1.25), ("LINKUSDT", "1d", 1.25),
+    ("GRAMUSDT", "4h", 1.25), ("GRAMUSDT", "1d", 1.25),
+    ("VTHOUSDT", "4h", 1.25), ("VTHOUSDT", "1d", 1.25),
+    ("FILUSDT", "4h", 1.25), ("FILUSDT", "1d", 1.25),
+    ("ADAUSDT", "4h", 1.25), ("ADAUSDT", "1d", 1.25),
 ]
 STATE = os.path.join(HERE, "paper_live_state.json")
 FEED = os.path.join(HERE, "live_data.json")
