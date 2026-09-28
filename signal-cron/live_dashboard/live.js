@@ -132,70 +132,79 @@
   setInterval(pullKlines, 15000);
   setInterval(pullDss, 30000);
 
-  // ---- BOIDS kawanan mood-pasar (panel LIVE FEED, tick BTC real) ----
-  var flock = [], ticks = [], i;
-  for (i = 0; i < 40; i++) flock.push({x: Math.random(), y: Math.random(),
-    vx: (Math.random() - 0.5) * 0.004, vy: (Math.random() - 0.5) * 0.004});
+  // ---- BOIDS (dicabut: diganti terrain 3D) ----
+  var ticks = [];
   setInterval(function () {
     jget(API + "/api/v3/ticker/price?symbol=" + SYM, function (t) {
       if (!t || !t.price) return;
       ticks.push(parseFloat(t.price));
-      if (ticks.length > 40) ticks.shift();
+      if (ticks.length > 200) ticks.shift();
     });
-  }, 3000);
-  function mood() { // 0 tenang -> 1 erupt, dari volatilitas tick
-    if (ticks.length < 10) return 0.25;
-    var s = 0, j;
-    for (j = 1; j < ticks.length; j++) s += Math.abs(Math.log(ticks[j] / ticks[j - 1]));
-    return Math.max(0, Math.min(1, (s / ticks.length) * 900));
-  }
-  (function boidsLoop() {
+  }, 2000);
+
+  // ---- TERRAIN ombak 3D tick-real (panel LIVE FEED): scroll cepat ----
+  var field = [], FR = 26, FC = 42, fTick = 0;
+  (function terrainLoop() {
     try {
       var cv = document.getElementById("globeMain");
       if (cv) {
-        var f = fitCv(cv), ctx = f.ctx, e = mood();
+        var f = fitCv(cv), ctx = f.ctx;
         ctx.setTransform(f.dpr, 0, 0, f.dpr, 0, 0);
-        ctx.fillStyle = "rgba(0,0,0,.28)";
-        ctx.fillRect(0, 0, f.W, f.H);
-        var W = f.W, H = f.H, R = 0.09 + (1 - e) * 0.12, SP = 0.0016 + e * 0.004, j, k;
-        flock.forEach(function (b) {
-          var ax = 0, ay = 0, nx = 0, ny = 0, avx = 0, avy = 0;
-          flock.forEach(function (o) {
-            if (o === b) return;
-            var dx = b.x - o.x, dy = b.y - o.y, dd = Math.sqrt(dx * dx + dy * dy) || 0.001;
-            if (dd < 0.09) { ax += dx / dd * 0.0006; ay += dy / dd * 0.0006; }
-            if (dd < R) { nx += o.x; ny += o.y; avx += o.vx; avy += o.vy; k = (k || 0) + 1; }
-          });
-          var n = flock.length;
-          ax += (nx / n - b.x) * 0.002 + (avx / n - b.vx) * 0.03;
-          ay += (ny / n - b.y) * 0.002 + (avy / n - b.vy) * 0.03;
-          // pusat magnet lemah agar tak kabur
-          ax += (0.5 - b.x) * 0.0004; ay += (0.5 - b.y) * 0.0004;
-          b.vx += ax; b.vy += ay;
-          var sp = Math.sqrt(b.vx * b.vx + b.vy * b.vy) || 1, mx = SP * 3;
-          if (sp > mx) { b.vx *= mx / sp; b.vy *= mx / sp; }
-          b.x += b.vx; b.y += b.vy;
-          if (b.x < 0) b.x += 1; if (b.x > 1) b.x -= 1;
-          if (b.y < 0) b.y += 1; if (b.y > 1) b.y -= 1;
-        });
-        flock.forEach(function (b) {
-          var ang = Math.atan2(b.vy, b.vx);
-          var g = Math.round(255 - e * 200), r = Math.round(140 + e * 115);
-          ctx.save();
-          ctx.translate(b.x * W, b.y * H);
-          ctx.rotate(ang);
-          ctx.fillStyle = "rgb(" + r + "," + g + ",60)";
-          ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = 6 + e * 10;
+        var W = f.W, H = f.H;
+        ctx.fillStyle = "rgba(0,0,0,.32)";
+        ctx.fillRect(0, 0, W, H);
+        // volatilitas tick -> kecepatan + glow
+        var vol = 0, j;
+        if (ticks.length > 10) {
+          for (j = 1; j < ticks.length; j++) vol += Math.abs(Math.log(ticks[j] / ticks[j - 1]));
+          vol = vol / ticks.length;
+        }
+        var erupt = Math.max(0, Math.min(1, vol * 1400));
+        var speed = 1 + Math.round(erupt * 3);
+        // normalisasi tick terakhir jadi barisan tinggi
+        var hist = ticks.slice(-FC);
+        while (hist.length < FC) hist.unshift(hist.length ? hist[0] : 0);
+        var mn = Math.min.apply(null, hist), mx = Math.max.apply(null, hist), rg = (mx - mn) || 1;
+        if (!field.length) for (j = 0; j < FR; j++) { field.push([]); for (var c = 0; c < FC; c++) field[j].push(0.5); }
+        fTick++;
+        if (fTick % 2 === 0) {
+          field.pop();
+          var nr = [], cc;
+          var t = Date.now() / 300;
+          for (cc = 0; cc < FC; cc++) {
+            var base = (hist[cc] - mn) / rg;
+            nr.push(Math.max(0, Math.min(1, base * 0.7 + 0.3 * (0.5 + 0.5 * Math.sin(cc * 0.5 + t)) * (0.4 + erupt))));
+          }
+          field.unshift(nr);
+        }
+        // proyeksi: tilt + perspektif
+        var tilt = 0.62 + Math.sin(Date.now() / 4000) * 0.04;
+        var horizon = H * 0.32, amp = H * 0.30;
+        var r, x, y, p, sx, sy2;
+        for (r = FR - 1; r >= 0; r--) {
+          var depth = r / (FR - 1), sc = 1 / (0.35 + depth * 1.4);
+          var yy = horizon + Math.pow(depth, 1.6) * (H - horizon);
           ctx.beginPath();
-          ctx.moveTo(7, 0); ctx.lineTo(-5, -4); ctx.lineTo(-2, 0); ctx.lineTo(-5, 4);
-          ctx.closePath(); ctx.fill();
-          ctx.restore();
-        });
-        ctx.fillStyle = "rgba(238,243,230,.8)"; ctx.font = "9px ui-monospace,monospace"; ctx.textAlign = "left";
-        ctx.fillText(e > 0.6 ? "ERUPT" : (e > 0.3 ? "AGITATED" : "CALM"), 10, H - 10);
+          for (c = 0; c < FC; c++) {
+            x = (c / (FC - 1) - 0.5) * W * (0.5 + depth) + W / 2;
+            y = yy - field[r][c] * amp * sc * Math.cos(tilt);
+            if (c === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+          }
+          var heat = field[r].reduce(function (a, b) { return a + b; }, 0) / FC;
+          ctx.strokeStyle = "rgba(" + Math.round(120 + heat * 135) + "," + Math.round(255 - heat * 120) + ",60," + (0.25 + depth * 0.65).toFixed(2) + ")";
+          ctx.lineWidth = 1;
+          ctx.shadowColor = "rgba(180,255,57,.6)"; ctx.shadowBlur = 2 + erupt * 8;
+          ctx.stroke(); ctx.shadowBlur = 0;
+        }
+        // garis scan cepat
+        var sxp = (Date.now() / 6) % (W + 80) - 40;
+        ctx.strokeStyle = "rgba(0,229,255,.35)";
+        ctx.beginPath(); ctx.moveTo(sxp, 0); ctx.lineTo(sxp, H); ctx.stroke();
+        ctx.fillStyle = "rgba(238,243,230,.85)"; ctx.font = "9px ui-monospace,monospace"; ctx.textAlign = "left";
+        ctx.fillText(erupt > 0.55 ? "SCANNING FAST" : "TRACKING", 10, H - 10);
       }
     } catch (err) {}
-    requestAnimationFrame(boidsLoop);
+    requestAnimationFrame(terrainLoop);
   })();
 
   // ---- util kanvas ----
