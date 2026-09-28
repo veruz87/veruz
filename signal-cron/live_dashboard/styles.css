@@ -98,3 +98,21 @@ tr.live td{animation:blink 1.6s steps(2) infinite}
 #streamInner{position:absolute;bottom:0;left:0;right:0;padding:10px 12px;font-size:11px;line-height:1.9}
 #streamInner .t{color:var(--dim);margin-right:8px}
 @media(max-width:1100px){#room{grid-template-columns:1fr;grid-template-rows:auto;overflow-y:auto;height:auto}body{overflow:auto}}
+@media(max-width:700px){
+#room{display:flex;flex-direction:column;gap:8px;padding:8px}
+#room>header{order:0}
+#center{order:1;overflow:visible}
+#rightRail{order:2;overflow:visible}
+#leftRail{order:3;overflow:visible}
+#rightRail #pPos{order:-1}
+.panel h3{font-size:11px}
+#eqNum{font-size:26px !important}
+#plexWrap canvas,#volWrap canvas{height:200px !important;width:100%;display:block}
+.chartBox{min-height:200px}
+#btcCanvas{height:200px !important;width:100%;display:block}
+#depthWrap{font-size:11px}
+#streamInner{font-size:12px;position:static}
+#stream{max-height:300px;overflow-y:auto}
+#wire{max-height:260px}
+#railPairs .pair{font-size:13px}
+}
