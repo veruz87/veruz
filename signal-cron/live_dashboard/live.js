@@ -216,7 +216,31 @@
 
   // (radar dicabut: crossCanvas dipakai bola 3D)
 
-  // ---- WATERFALL trade live (panel THE WIRE, aggTrades BTC real) ----
+  // ---- TAPE trade live multi-koin (panel TAPE, aggTrades real, nonstop) ----
+  var TAPE = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT"], tapeLast = {};
+  setInterval(function () {
+    TAPE.forEach(function (s) {
+      jget(API + "/api/v3/aggTrades?symbol=" + s + "&limit=12", function (t) {
+        if (!t || !t.length) return;
+        var si = document.getElementById("streamInner");
+        if (!si) return;
+        var html = "";
+        t.forEach(function (x) {
+          if ((tapeLast[s] || 0) >= x.a) return;
+          tapeLast[s] = Math.max(tapeLast[s] || 0, x.a);
+          var usd = parseFloat(x.q) * parseFloat(x.p);
+          var big = usd >= 50000 ? " <b>WHALE</b>" : "";
+          html = '<div><span class="t">' + s.replace("USDT", "") + "</span>" +
+            '<span class="' + (x.m ? "dn" : "up") + '">' + parseFloat(x.p).toLocaleString("en-US") +
+            "</span> $" + (usd >= 1000 ? (usd / 1000).toFixed(1) + "K" : usd.toFixed(0)) + big + "</div>" + html;
+        });
+        if (html) {
+          si.innerHTML = html + si.innerHTML;
+          while (si.children.length > 40) si.removeChild(si.lastChild);
+        }
+      });
+    });
+  }, 2000);
   var falls = [], lastTid = 0;
   setInterval(function () {
     jget(API + "/api/v3/aggTrades?symbol=" + SYM + "&limit=30", function (t) {

@@ -102,7 +102,7 @@ tr.live td{animation:blink 1.6s steps(2) infinite}
 .up{color:var(--lime)}
 .dn{color:var(--red)}
 #stream{overflow:hidden;position:relative;flex:1}
-#streamInner{position:absolute;bottom:0;left:0;right:0;padding:10px 12px;font-size:11px;line-height:1.9}
+#streamInner{position:absolute;top:0;left:0;right:0;padding:10px 12px;font-size:11px;line-height:1.9}
 #streamInner .t{color:var(--dim);margin-right:8px}
 #typeLine .cursor{animation:blink 0.8s steps(1) infinite;color:var(--lime)}
 @keyframes blink{50%{opacity:0}}
