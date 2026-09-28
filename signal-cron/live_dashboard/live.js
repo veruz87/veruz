@@ -9,33 +9,82 @@
     fetch(url).then(function (r) { return r.json(); }).then(cb).catch(function () {});
   }
 
-  // ---- depth order book -> panel LIVE FEED ----
-  function drawDepth() {
-    jget(API + "/api/v3/depth?symbol=" + SYM + "&limit=15", function (d) {
-      if (!d || !d.asks || !d.bids) return;
-      var asks = d.asks.slice().reverse(), bids = d.bids;
-      var mx = 0, i;
-      for (i = 0; i < asks.length; i++) mx = Math.max(mx, parseFloat(asks[i][1]));
-      for (i = 0; i < bids.length; i++) mx = Math.max(mx, parseFloat(bids[i][1]));
-      if (mx <= 0) mx = 1;
-      function row(p, q, cls) {
-        var w = Math.max(2, parseFloat(q) / mx * 100);
-        return '<div class="drow ' + cls + '"><span class="dp">' + parseFloat(p).toFixed(1) +
-          '</span><span class="dbar"><i style="width:' + w.toFixed(1) + '%"></i></span>' +
-          '<span class="dq">' + parseFloat(q).toFixed(3) + "</span></div>";
-      }
-      var ha = "", hb = "";
-      for (i = 0; i < asks.length; i++) ha += row(asks[i][0], asks[i][1], "ask");
-      for (i = 0; i < bids.length; i++) hb += row(bids[i][0], bids[i][1], "bid");
-      var a = document.getElementById("depthAsk"), b = document.getElementById("depthBid");
-      if (a) a.innerHTML = ha;
-      if (b) b.innerHTML = hb;
-      var bestA = parseFloat(d.asks[d.asks.length - 1][0]),
-          bestB = parseFloat(d.bids[0][0]),
-          mid = document.getElementById("depthMid");
-      if (mid) mid.textContent = bestB.toFixed(1) + " / " + bestA.toFixed(1) +
-        "  ·  spread " + (bestA - bestB).toFixed(1);
+  // ---- bola 3D pair (proyeksi orthographic, data feed cron) ----
+  var nodes = [], stars = [], angY = 0;
+  (function initSphere() {
+    var N = 64, i, phi, th;
+    for (i = 0; i < N; i++) {
+      phi = Math.acos(1 - 2 * (i + 0.5) / N);
+      th = Math.PI * (1 + Math.sqrt(5)) * i;
+      nodes.push({x: Math.sin(phi) * Math.cos(th), y: Math.cos(phi), z: Math.sin(phi) * Math.sin(th),
+                  vx: (Math.random() - 0.5) * 0.02, vy: (Math.random() - 0.5) * 0.02});
+    }
+    for (i = 0; i < 70; i++) stars.push({x: Math.random() * 2 - 1, y: Math.random() * 2 - 1, z: Math.random()});
+  })();
+  function drawGlobe() {
+    var cv = document.getElementById("globe");
+    if (!cv) { requestAnimationFrame(drawGlobe); return; }
+    var r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+    if (cv.width !== Math.max(50, r.width * dpr)) { cv.width = Math.max(50, r.width * dpr); cv.height = Math.max(50, r.height * dpr); }
+    var ctx = cv.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    var W = r.width, H = r.height;
+    ctx.clearRect(0, 0, W, H);
+    var R = Math.min(W, H) * 0.36, cx = W / 2, cy = H / 2;
+    angY += 0.004;
+    var cyA = Math.cos(angY), syA = Math.sin(angY);
+    var pairs = window.__pairs || [], posSyms = window.__posSyms || {};
+    var vmax = 1, i;
+    pairs.forEach(function (m) { vmax = Math.max(vmax, m.vol || 0); });
+    // orbit + wireframe
+    ctx.strokeStyle = "rgba(180,255,57,.14)";
+    ctx.lineWidth = 1;
+    [-0.6, 0, 0.6].forEach(function (k) {
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, R, R * 0.32, 0, 0, 7);
+      ctx.stroke();
+      void k;
     });
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.stroke();
+    // bintang latar
+    ctx.fillStyle = "rgba(255,255,255,.35)";
+    stars.forEach(function (s) {
+      s.x += 0.0006; if (s.x > 1) s.x = -1;
+      ctx.fillRect(cx + s.x * R * 1.6, cy + s.y * R * 1.6, 1.2, 1.2);
+    });
+    // node pair pada bola
+    var pts = [];
+    for (i = 0; i < nodes.length; i++) {
+      var p = nodes[i], m = pairs.length ? pairs[i % pairs.length] : null;
+      var x1 = p.x * cyA + p.z * syA, z1 = -p.x * syA + p.z * cyA, y1 = p.y;
+      var sx = cx + x1 * R, sy = cy - y1 * R, depth = (z1 + 1) / 2;
+      var sz = m ? (5 + 13 * Math.log(1 + (m.vol || 0) / vmax * 9) / Math.log(10)) : 3;
+      var col = "#b4ff39", glow = 8;
+      if (m) {
+        if (m.dss4 <= 30) { col = "#00e5ff"; glow = 14; }
+        else if (m.dss4 >= 70) { col = "#ff4d5e"; glow = 14; }
+        if (posSyms[m.sym]) { col = "#ffffff"; glow = 18; }
+      }
+      pts.push({x: sx, y: sy, z: depth, r: sz * (0.55 + depth * 0.7), col: col, glow: glow,
+                sym: m ? m.sym.replace("USDT", "") : "", open: m ? !!posSyms[m.sym] : false});
+    }
+    pts.sort(function (a, b) { return a.z - b.z; });
+    pts.forEach(function (q) {
+      ctx.globalAlpha = 0.35 + q.z * 0.65;
+      ctx.beginPath(); ctx.arc(q.x, q.y, q.r, 0, 7);
+      ctx.fillStyle = q.col; ctx.shadowColor = q.col; ctx.shadowBlur = q.glow; ctx.fill();
+      ctx.shadowBlur = 0;
+      if (q.z > 0.55) {
+        ctx.fillStyle = "#ffffff"; ctx.font = "9px ui-monospace,monospace"; ctx.textAlign = "center";
+        ctx.fillText(q.sym, q.x, q.y + q.r + 10);
+      }
+      if (q.open) {
+        ctx.beginPath(); ctx.arc(q.x, q.y, q.r + 4, 0, 7);
+        ctx.strokeStyle = "#ffffff"; ctx.stroke();
+      }
+    });
+    ctx.globalAlpha = 1;
+    requestAnimationFrame(drawGlobe);
   }
 
   // ---- 1m candles BTC -> dipakai app.js drawBtc ----
@@ -79,8 +128,7 @@
     });
   }
 
-  drawDepth(); pullKlines(); pullDss();
-  setInterval(drawDepth, 3000);
+  drawGlobe(); pullKlines(); pullDss();
   setInterval(pullKlines, 15000);
   setInterval(pullDss, 30000);
 })();

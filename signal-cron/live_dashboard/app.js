@@ -120,7 +120,10 @@
       var wp = document.getElementById("wire");
       if (wp) wp.scrollTop = wp.scrollHeight;
     }
-    // (panel volBars diganti CROSS — blok dihapus)
+    // expose untuk globe 3D (live.js): pair + posisi open
+    window.__pairs = d.market || [];
+    window.__posSyms = {};
+    (d.positions || []).forEach(function (p) { window.__posSyms[p.sym] = 1; });
     drawBtc(window.__liveBtc || d.btc1m || []);
     drawCross(window.__liveDss || d.dssX || {});
     seedField(mood, (d.positions || []).length, d.market || []);

@@ -58,7 +58,7 @@ header{grid-column:1/-1;display:flex;align-items:center;gap:18px;border:1px soli
 #vidWrap{flex:1;position:relative;overflow:hidden;padding:0;min-height:0}
 #bgvid{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.55}
 #vidTag{position:absolute;top:8px;left:10px;font-size:10px;letter-spacing:2px;color:var(--lime);z-index:2}
-#depthWrap{position:absolute;inset:0;overflow:hidden;padding:26px 10px 8px;font-family:ui-monospace,monospace;font-size:10px}
+#globe{position:absolute;inset:0;width:100%;height:100%}
 #depthAsk,#depthBid{display:flex;flex-direction:column;gap:2px}
 #depthMid{text-align:center;color:var(--amber,#ffb224);padding:5px 0;letter-spacing:1px}
 .drow{display:flex;align-items:center;gap:6px}
