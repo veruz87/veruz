@@ -22,7 +22,7 @@
     for (i = 0; i < 70; i++) stars.push({x: Math.random() * 2 - 1, y: Math.random() * 2 - 1, z: Math.random()});
   })();
   function drawGlobe() {
-    var cv = document.getElementById("globe");
+    var cv = document.getElementById("crossCanvas");
     if (!cv) { requestAnimationFrame(drawGlobe); return; }
     var r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
     if (cv.width !== Math.max(50, r.width * dpr)) { cv.width = Math.max(50, r.width * dpr); cv.height = Math.max(50, r.height * dpr); }
@@ -139,61 +139,7 @@
     return {ctx: cv.getContext("2d"), dpr: dpr, W: r.width, H: r.height};
   }
 
-  // ---- RADAR cross DSS (panel CROSS) ----
-  var RCOLS = ["#b4ff39", "#00e5ff", "#ffb224", "#ff4d5e", "#c792ea", "#7fb3ff"];
-  window.__drawRadar = function () {
-    var cv = document.getElementById("crossCanvas");
-    if (!cv) return;
-    var f = fitCv(cv), ctx = f.ctx;
-    ctx.setTransform(f.dpr, 0, 0, f.dpr, 0, 0);
-    var W = f.W, H = f.H;
-    ctx.clearRect(0, 0, W, H);
-    var dx = window.__radarDx || {}, keys = Object.keys(dx);
-    var cx = W / 2, cy = H / 2, R = Math.max(20, Math.min(W, H) / 2 - 16);
-    // ring 30/70/100
-    ctx.lineWidth = 1;
-    [[0.3, "rgba(0,229,255,.35)", "30"], [0.7, "rgba(255,77,94,.35)", "70"],
-     [1, "rgba(180,255,57,.25)", "100"]].forEach(function (z) {
-      ctx.strokeStyle = z[1];
-      ctx.beginPath(); ctx.arc(cx, cy, R * z[0], 0, 7); ctx.stroke();
-      ctx.fillStyle = "#8a937f"; ctx.font = "8px ui-monospace,monospace"; ctx.textAlign = "left";
-      ctx.fillText(z[2], cx + 3, cy - R * z[0] - 2);
-    });
-    ctx.strokeStyle = "rgba(255,255,255,.08)";
-    for (var s = 0; s < 4; s++) {
-      ctx.beginPath(); ctx.moveTo(cx - R, cy); ctx.lineTo(cx + R, cy);
-      ctx.moveTo(cx, cy - R); ctx.lineTo(cx, cy + R); ctx.stroke();
-      break;
-    }
-    if (!keys.length) {
-      ctx.fillStyle = "#a7b39c"; ctx.font = "11px ui-monospace,monospace";
-      ctx.fillText("menunggu feed…", 12, 20);
-      return;
-    }
-    // sapuan
-    var a = (Date.now() / 1400) % (Math.PI * 2), k;
-    for (k = 0; k < 3; k++) {
-      ctx.strokeStyle = "rgba(180,255,57," + (0.5 - k * 0.15).toFixed(2) + ")";
-      ctx.beginPath(); ctx.moveTo(cx, cy);
-      ctx.lineTo(cx + Math.cos(a - k * 0.12) * R, cy + Math.sin(a - k * 0.12) * R);
-      ctx.stroke();
-    }
-    // blip: sudut = DSS (0-100 -> keliling), label koin
-    keys.forEach(function (kk, ki) {
-      var v = (dx[kk] || []).slice(-1)[0];
-      if (v === undefined) return;
-      var ang = (Math.max(0, Math.min(100, v)) / 100) * Math.PI * 2 - Math.PI / 2;
-      var col = RCOLS[ki % RCOLS.length];
-      var hot = (v <= 30 || v >= 70);
-      var x = cx + Math.cos(ang) * R, y = cy + Math.sin(ang) * R;
-      ctx.beginPath(); ctx.arc(x, y, hot ? 5 : 3.5, 0, 7);
-      ctx.fillStyle = col; ctx.shadowColor = col; ctx.shadowBlur = hot ? 12 : 5; ctx.fill();
-      ctx.shadowBlur = 0;
-      ctx.fillStyle = "#eef3e6"; ctx.font = "8px ui-monospace,monospace"; ctx.textAlign = "center";
-      ctx.fillText(kk + " " + Math.round(v), x, y - 8);
-    });
-  };
-  (function radarLoop() { try { window.__drawRadar(); } catch (e) {} requestAnimationFrame(radarLoop); })();
+  // (radar dicabut: crossCanvas dipakai bola 3D)
 
   // ---- WATERFALL trade live (panel THE WIRE, aggTrades BTC real) ----
   var falls = [], lastTid = 0;

@@ -174,12 +174,6 @@
 
   function drawCross(dx) {
     window.__radarDx = dx || {};
-    if (window.__drawRadar) { window.__drawRadar(); return; }
-    var cv = $("crossCanvas"); if (!cv) return;
-    var dpr = fit(cv), ctx = cv.getContext("2d");
-    ctx.scale(dpr, dpr);
-    ctx.fillStyle = "#a7b39c"; ctx.font = "11px ui-monospace,monospace";
-    ctx.fillText("menunggu feed…", 12, 20);
   }
 
   function seedField(mood, nPos, market) {
