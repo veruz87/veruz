@@ -220,7 +220,7 @@
   var TAPE = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT"], tapeLast = {};
   setInterval(function () {
     TAPE.forEach(function (s) {
-      jget(API + "/api/v3/aggTrades?symbol=" + s + "&limit=12", function (t) {
+      jget(API + "/api/v3/aggTrades?symbol=" + s + "&limit=6", function (t) {
         if (!t || !t.length) return;
         var si = document.getElementById("streamInner");
         if (!si) return;
@@ -240,7 +240,7 @@
         }
       });
     });
-  }, 2000);
+  }, 1000);
   var falls = [], lastTid = 0;
   setInterval(function () {
     jget(API + "/api/v3/aggTrades?symbol=" + SYM + "&limit=30", function (t) {
