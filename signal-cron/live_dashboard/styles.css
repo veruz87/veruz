@@ -26,6 +26,11 @@ header{grid-column:1/-1;display:flex;align-items:center;gap:18px;border:1px soli
 #pPairs{flex:1;min-height:0}
 #pWire{flex:0 0 260px}
 #wire{overflow-y:auto;flex:1;padding:8px 12px;font-size:10.5px;line-height:2}
+#pWire,#pScan{position:relative;overflow:hidden}
+#wireCanvas,#warpCanvas{position:absolute;inset:0;width:100%;height:100%}
+#wire{position:relative;z-index:2}
+#wireInner{text-shadow:0 0 6px #000,0 0 6px #000}
+#streamInner{text-shadow:0 0 6px #000,0 0 6px #000;z-index:2}
 #wireInner>div{animation:wirein .3s ease-out}
 @keyframes wirein{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
 #wire .t{color:var(--dim);margin-right:6px}
@@ -111,7 +116,8 @@ tr.live td{animation:blink 1.6s steps(2) infinite}
 .chartBox{min-height:200px}
 #btcCanvas{height:200px !important;width:100%;display:block}
 #depthWrap{font-size:11px}
-#streamInner{font-size:12px;position:static}
+#pWire h3,#pScan h3{position:relative;z-index:2}
+#streamInner{font-size:12px;position:relative;z-index:2}
 #stream{max-height:300px;overflow-y:auto}
 #wire{max-height:260px}
 #railPairs .pair{font-size:13px}

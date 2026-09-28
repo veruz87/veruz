@@ -131,4 +131,135 @@
   drawGlobe(); pullKlines(); pullDss();
   setInterval(pullKlines, 15000);
   setInterval(pullDss, 30000);
+
+  // ---- util kanvas ----
+  function fitCv(cv) {
+    var r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+    cv.width = Math.max(50, r.width * dpr); cv.height = Math.max(50, r.height * dpr);
+    return {ctx: cv.getContext("2d"), dpr: dpr, W: r.width, H: r.height};
+  }
+
+  // ---- RADAR cross DSS (panel CROSS) ----
+  var RCOLS = ["#b4ff39", "#00e5ff", "#ffb224", "#ff4d5e", "#c792ea", "#7fb3ff"];
+  window.__drawRadar = function () {
+    var cv = document.getElementById("crossCanvas");
+    if (!cv) return;
+    var f = fitCv(cv), ctx = f.ctx;
+    ctx.setTransform(f.dpr, 0, 0, f.dpr, 0, 0);
+    var W = f.W, H = f.H;
+    ctx.clearRect(0, 0, W, H);
+    var dx = window.__radarDx || {}, keys = Object.keys(dx);
+    var cx = W / 2, cy = H / 2, R = Math.max(20, Math.min(W, H) / 2 - 16);
+    // ring 30/70/100
+    ctx.lineWidth = 1;
+    [[0.3, "rgba(0,229,255,.35)", "30"], [0.7, "rgba(255,77,94,.35)", "70"],
+     [1, "rgba(180,255,57,.25)", "100"]].forEach(function (z) {
+      ctx.strokeStyle = z[1];
+      ctx.beginPath(); ctx.arc(cx, cy, R * z[0], 0, 7); ctx.stroke();
+      ctx.fillStyle = "#8a937f"; ctx.font = "8px ui-monospace,monospace"; ctx.textAlign = "left";
+      ctx.fillText(z[2], cx + 3, cy - R * z[0] - 2);
+    });
+    ctx.strokeStyle = "rgba(255,255,255,.08)";
+    for (var s = 0; s < 4; s++) {
+      ctx.beginPath(); ctx.moveTo(cx - R, cy); ctx.lineTo(cx + R, cy);
+      ctx.moveTo(cx, cy - R); ctx.lineTo(cx, cy + R); ctx.stroke();
+      break;
+    }
+    if (!keys.length) {
+      ctx.fillStyle = "#a7b39c"; ctx.font = "11px ui-monospace,monospace";
+      ctx.fillText("menunggu feed…", 12, 20);
+      return;
+    }
+    // sapuan
+    var a = (Date.now() / 1400) % (Math.PI * 2), k;
+    for (k = 0; k < 3; k++) {
+      ctx.strokeStyle = "rgba(180,255,57," + (0.5 - k * 0.15).toFixed(2) + ")";
+      ctx.beginPath(); ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + Math.cos(a - k * 0.12) * R, cy + Math.sin(a - k * 0.12) * R);
+      ctx.stroke();
+    }
+    // blip: sudut = DSS (0-100 -> keliling), label koin
+    keys.forEach(function (kk, ki) {
+      var v = (dx[kk] || []).slice(-1)[0];
+      if (v === undefined) return;
+      var ang = (Math.max(0, Math.min(100, v)) / 100) * Math.PI * 2 - Math.PI / 2;
+      var col = RCOLS[ki % RCOLS.length];
+      var hot = (v <= 30 || v >= 70);
+      var x = cx + Math.cos(ang) * R, y = cy + Math.sin(ang) * R;
+      ctx.beginPath(); ctx.arc(x, y, hot ? 5 : 3.5, 0, 7);
+      ctx.fillStyle = col; ctx.shadowColor = col; ctx.shadowBlur = hot ? 12 : 5; ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = "#eef3e6"; ctx.font = "8px ui-monospace,monospace"; ctx.textAlign = "center";
+      ctx.fillText(kk + " " + Math.round(v), x, y - 8);
+    });
+  };
+  (function radarLoop() { try { window.__drawRadar(); } catch (e) {} requestAnimationFrame(radarLoop); })();
+
+  // ---- WATERFALL trade live (panel THE WIRE, aggTrades BTC real) ----
+  var falls = [], lastTid = 0;
+  setInterval(function () {
+    jget(API + "/api/v3/aggTrades?symbol=" + SYM + "&limit=30", function (t) {
+      if (!t || !t.length) return;
+      t.forEach(function (x) {
+        if (x.a > lastTid) {
+          lastTid = Math.max(lastTid, x.a);
+          var usd = parseFloat(x.q) * parseFloat(x.p);
+          falls.push({x: Math.random(), y: -0.05, vy: 0.004 + Math.min(0.02, usd / 5000000),
+                      w: 3 + Math.min(26, usd / 8000), sell: !!x.m,
+                      usd: usd, px: parseFloat(x.p)});
+        }
+      });
+      if (falls.length > 70) falls = falls.slice(-70);
+    });
+  }, 2000);
+  (function wireLoop() {
+    try {
+      var cv = document.getElementById("wireCanvas");
+      if (cv) {
+        var f = fitCv(cv), ctx = f.ctx;
+        ctx.setTransform(f.dpr, 0, 0, f.dpr, 0, 0);
+        ctx.clearRect(0, 0, f.W, f.H);
+        falls.forEach(function (b) {
+          b.y += b.vy;
+          var col = b.sell ? "#ff4d5e" : "#b4ff39";
+          ctx.globalAlpha = Math.max(0, 1 - b.y * 0.8);
+          ctx.fillStyle = col;
+          var bw = Math.min(f.W * 0.8, b.w * 3);
+          ctx.fillRect(b.x * f.W - bw / 2, b.y * f.H, bw, 3);
+          if (b.usd > 100000) {
+            ctx.fillStyle = "#fff"; ctx.font = "8px ui-monospace,monospace"; ctx.textAlign = "center";
+            ctx.fillText("$" + (b.usd / 1000).toFixed(0) + "K", b.x * f.W, b.y * f.H - 3);
+          }
+        });
+        ctx.globalAlpha = 1;
+        falls = falls.filter(function (b) { return b.y < 1.1; });
+      }
+    } catch (e) {}
+    requestAnimationFrame(wireLoop);
+  })();
+
+  // ---- WARP tunnel (belakang teks SCAN LOG) ----
+  var warp = [];
+  (function warpLoop() {
+    try {
+      var cv = document.getElementById("warpCanvas");
+      if (cv) {
+        var f = fitCv(cv), ctx = f.ctx, i;
+        ctx.setTransform(f.dpr, 0, 0, f.dpr, 0, 0);
+        ctx.clearRect(0, 0, f.W, f.H);
+        if (!warp.length) for (i = 0; i < 60; i++) warp.push({a: Math.random() * 7, r: Math.random(), sp: 0.004 + Math.random() * 0.012});
+        var cx = f.W / 2, cy = f.H / 2, R = Math.max(f.W, f.H) / 2;
+        warp.forEach(function (s) {
+          s.r += s.sp;
+          if (s.r > 1) { s.r = 0.02; s.a = Math.random() * 7; }
+          var x0 = cx + Math.cos(s.a) * s.r * R, y0 = cy + Math.sin(s.a) * s.r * R;
+          var r2 = Math.min(1, s.r + s.sp * 6);
+          var x1 = cx + Math.cos(s.a) * r2 * R, y1 = cy + Math.sin(s.a) * r2 * R;
+          ctx.strokeStyle = "rgba(180,255,57," + (0.05 + s.r * 0.3).toFixed(2) + ")";
+          ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+        });
+      }
+    } catch (e) {}
+    requestAnimationFrame(warpLoop);
+  })();
 })();

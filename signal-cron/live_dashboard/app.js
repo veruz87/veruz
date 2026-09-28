@@ -173,70 +173,13 @@
   }
 
   function drawCross(dx) {
+    window.__radarDx = dx || {};
+    if (window.__drawRadar) { window.__drawRadar(); return; }
     var cv = $("crossCanvas"); if (!cv) return;
     var dpr = fit(cv), ctx = cv.getContext("2d");
     ctx.scale(dpr, dpr);
-    var W = cv.width / dpr, H = cv.height / dpr;
-    ctx.clearRect(0, 0, W, H);
-    var keys = Object.keys(dx || {});
-    if (!keys.length) {
-      ctx.fillStyle = "#a7b39c"; ctx.font = "11px ui-monospace,monospace";
-      ctx.fillText("menunggu feed…", 12, 20);
-      return;
-    }
-    var cols = ["#b4ff39", "#00e5ff", "#ffb224", "#ff4d5e", "#c792ea", "#7fb3ff"];
-    // zona 80/20 (area chart mulai di bawah judul agar tak tabrakan legenda)
-    ctx.strokeStyle = "rgba(255,178,36,.25)"; ctx.setLineDash([4, 4]);
-    [80, 20].forEach(function (z) {
-      var y = 6 + (1 - z / 100) * (H - 26);
-      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
-    });
-    ctx.setLineDash([]);
-    // titik cross antar garis (show-off dari data real)
-    function crossAt(a, b) {
-      var out = [];
-      for (var i = 1; i < a.length && i < b.length; i++) {
-        if ((a[i-1] <= b[i-1] && a[i] > b[i]) || (a[i-1] >= b[i-1] && a[i] < b[i])) out.push(i);
-      }
-      return out;
-    }
-    var series = keys.map(function (k) { return dx[k] || []; });
-    // legenda horizontal di bawah (tak menutupi judul/panel)
-    var lx0 = 8;
-    keys.forEach(function (k, ki) {
-      var col = cols[ki % cols.length];
-      ctx.fillStyle = col;
-      ctx.fillRect(lx0, H - 12, 14, 3);
-      ctx.fillStyle = "#eef3e6"; ctx.font = "9px ui-monospace,monospace"; ctx.textAlign = "left";
-      ctx.fillText(k, lx0 + 17, H - 3);
-      lx0 += 17 + ctx.measureText(k).width + 12;
-    });
-    keys.forEach(function (k, ki) {
-      var v = series[ki];
-      if (v.length < 2) return;
-      var col = cols[ki % cols.length];
-      ctx.beginPath();
-      v.forEach(function (val, i) {
-        var x = 4 + i * (W - 8) / (v.length - 1);
-        var y = 6 + (1 - Math.max(0, Math.min(100, val)) / 100) * (H - 26);
-        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-      });
-      ctx.strokeStyle = col; ctx.lineWidth = 1.6;
-      ctx.shadowColor = col; ctx.shadowBlur = 7; ctx.stroke(); ctx.shadowBlur = 0;
-    });
-    // flash cross terbaru
-    var pulse = 2 + Math.sin(Date.now() / 250) * 1.5;
-    for (var a = 0; a < series.length; a++) {
-      for (var b = a + 1; b < series.length; b++) {
-        crossAt(series[a], series[b]).slice(-2).forEach(function (i) {
-          var v = series[a];
-          var x = 4 + i * (W - 8) / (v.length - 1);
-          var y = 6 + (1 - Math.max(0, Math.min(100, v[i])) / 100) * (H - 26);
-          ctx.beginPath(); ctx.arc(x, y, pulse + 1.5, 0, 7);
-          ctx.fillStyle = "#ffffff"; ctx.fill();
-        });
-      }
-    }
+    ctx.fillStyle = "#a7b39c"; ctx.font = "11px ui-monospace,monospace";
+    ctx.fillText("menunggu feed…", 12, 20);
   }
 
   function seedField(mood, nPos, market) {
