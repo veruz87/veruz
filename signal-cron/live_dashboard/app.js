@@ -75,21 +75,53 @@
       openUsd += r * eq * 0.05 * (a.leverage || 5);
     });
 
-    // stream SCAN-LOG + trade tutup di atasnya (data real, terbaru di atas)
-    var sc = "";
+    // stream SCAN-LOG + trade tutup di atasnya (data real, terbaru di atas;
+    // baris teratas mengetik sendiri ala terminal)
+    function rowHtml(t, inner) { return '<div><span class="t">' + t + "</span>" + inner + "</div>"; }
+    var topKey = "", topHtml = "", topText = "";
+    var restRows = [];
+    var scan = d.scan || [];
+    for (var ix = scan.length - 1; ix >= 0; ix--) {
+      var s = scan[ix];
+      var skip = s.msg.indexOf("SKIP") >= 0;
+      var html = rowHtml(s.t, '<span class="' + (skip ? "dn" : "up") + '">' + s.msg + "</span>");
+      if (ix === scan.length - 1) { topKey = "s" + s.t + s.msg; topHtml = html; topText = s.t + "  " + s.msg; }
+      else restRows.push(html);
+    }
     (d.log || []).slice(-6).reverse().forEach(function (t) {
       var usd = t.pnl / 100 * eq;
-      sc += '<div><span class="t">' + t.time + "</span><b>" + t.sym.replace("USDT", "") + " " +
-        t.tf + " " + t.reason + '</b> <span class="' + (t.pnl >= 0 ? "up" : "dn") + '">' +
-        money(usd) + "</span></div>";
-    });
-    (d.scan || []).forEach(function (s) {
-      var skip = s.msg.indexOf("SKIP") >= 0;
-      sc = '<div><span class="t">' + s.t + "</span>" +
-        '<span class="' + (skip ? "dn" : "up") + '">' + s.msg + "</span></div>" + sc;
+      var html = rowHtml(t.time, "<b>" + t.sym.replace("USDT", "") + " " + t.tf + " " + t.reason +
+        '</b> <span class="' + (t.pnl >= 0 ? "up" : "dn") + '">' + money(usd) + "</span>");
+      if (!topKey) { topKey = "l" + t.time + t.sym + t.reason; topHtml = html; topText = t.time + "  " + t.sym + " " + t.tf + " " + t.reason; }
+      else restRows.push(html);
     });
     var si = document.getElementById("streamInner");
-    if (si) si.innerHTML = sc || '<div style="color:var(--dim)">— memindai —</div>';
+    if (si) {
+      if (!topKey) si.innerHTML = '<div style="color:var(--dim)">— memindai —</div>';
+      else if (topKey !== window.__typedKey) {
+        si.innerHTML = '<div id="typeLine"><span class="t">' + topText.split("  ")[0] +
+          '</span><span id="typeTxt"></span><span class="cursor">▊</span></div>' + restRows.join("");
+        window.__typedKey = topKey;
+        if (window.__typeTimer) clearInterval(window.__typeTimer);
+        (function () {
+          var msg = (topText.split("  ")[1] || topHtml.replace(/<[^>]*>/g, "")), ci = 0;
+          var el = document.getElementById("typeTxt");
+          window.__typeTimer = setInterval(function () {
+            var cur = document.getElementById("typeTxt");
+            if (!cur) { clearInterval(window.__typeTimer); return; }
+            ci += 2;
+            cur.textContent = msg.slice(0, ci);
+            if (ci >= msg.length) {
+              clearInterval(window.__typeTimer);
+              var line = document.getElementById("typeLine");
+              if (line && topHtml) line.outerHTML = topHtml;
+            }
+          }, 24);
+        })();
+      } else {
+        si.innerHTML = topHtml + restRows.join("");
+      }
+    }
     // stream EXECUTION dihapus (digabung ke SCAN di atas); blok mati dibuang
 
     // mood partikel dari open pnl

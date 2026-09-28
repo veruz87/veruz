@@ -104,6 +104,8 @@ tr.live td{animation:blink 1.6s steps(2) infinite}
 #stream{overflow:hidden;position:relative;flex:1}
 #streamInner{position:absolute;bottom:0;left:0;right:0;padding:10px 12px;font-size:11px;line-height:1.9}
 #streamInner .t{color:var(--dim);margin-right:8px}
+#typeLine .cursor{animation:blink 0.8s steps(1) infinite;color:var(--lime)}
+@keyframes blink{50%{opacity:0}}
 @media(max-width:1100px){#room{grid-template-columns:1fr;grid-template-rows:auto;overflow-y:auto;height:auto}body{overflow:auto}}
 @media(max-width:700px){
 #room{display:flex;flex-direction:column;gap:8px;padding:8px}
