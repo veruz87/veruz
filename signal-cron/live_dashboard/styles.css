@@ -105,6 +105,7 @@ tr.live td{animation:blink 1.6s steps(2) infinite}
 #streamInner{position:absolute;top:0;left:0;right:0;padding:10px 12px;font-size:11px;line-height:1.9}
 #streamInner .t{color:var(--dim);margin-right:8px}
 #streamInner>div:first-child{animation:dropin .45s ease-out}
+#streamInner .trow.fresh{animation:dropin .45s ease-out}
 @keyframes dropin{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}
 @media(max-width:1100px){#room{grid-template-columns:1fr;grid-template-rows:auto;overflow-y:auto;height:auto}body{overflow:auto}}
 @media(max-width:700px){

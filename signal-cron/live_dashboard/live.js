@@ -224,20 +224,23 @@
         if (!t || !t.length) return;
         var si = document.getElementById("streamInner");
         if (!si) return;
-        var html = "";
+        var rows = [];
         t.forEach(function (x) {
           if ((tapeLast[s] || 0) >= x.a) return;
           tapeLast[s] = Math.max(tapeLast[s] || 0, x.a);
           var usd = parseFloat(x.q) * parseFloat(x.p);
           var big = usd >= 50000 ? " <b>WHALE</b>" : "";
-          html = '<div><span class="t">' + s.replace("USDT", "") + "</span>" +
+          rows.push('<div class="trow fresh"><span class="t">' + s.replace("USDT", "") + "</span>" +
             '<span class="' + (x.m ? "dn" : "up") + '">' + parseFloat(x.p).toLocaleString("en-US") +
-            "</span> $" + (usd >= 1000 ? (usd / 1000).toFixed(1) + "K" : usd.toFixed(0)) + big + "</div>" + html;
+            "</span> $" + (usd >= 1000 ? (usd / 1000).toFixed(1) + "K" : usd.toFixed(0)) + big + "</div>");
         });
-        if (html) {
-          si.innerHTML = html + si.innerHTML;
-          while (si.children.length > 40) si.removeChild(si.lastChild);
-        }
+        rows.forEach(function (html) {
+          var tmp = document.createElement("div");
+          tmp.innerHTML = html;
+          var node = tmp.firstChild;
+          si.insertBefore(node, si.firstChild);
+        });
+        while (si.children.length > 40) si.removeChild(si.lastChild);
       });
     });
   }, 1000);
