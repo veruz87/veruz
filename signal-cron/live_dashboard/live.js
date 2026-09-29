@@ -9,83 +9,7 @@
     fetch(url).then(function (r) { return r.json(); }).then(cb).catch(function () {});
   }
 
-  // ---- bola 3D pair (proyeksi orthographic, data feed cron) ----
-  var nodes = [], stars = [], angY = 0;
-  (function initSphere() {
-    var N = 64, i, phi, th;
-    for (i = 0; i < N; i++) {
-      phi = Math.acos(1 - 2 * (i + 0.5) / N);
-      th = Math.PI * (1 + Math.sqrt(5)) * i;
-      nodes.push({x: Math.sin(phi) * Math.cos(th), y: Math.cos(phi), z: Math.sin(phi) * Math.sin(th),
-                  vx: (Math.random() - 0.5) * 0.02, vy: (Math.random() - 0.5) * 0.02});
-    }
-    for (i = 0; i < 70; i++) stars.push({x: Math.random() * 2 - 1, y: Math.random() * 2 - 1, z: Math.random()});
-  })();
-  function drawGlobe() {
-    var cv = document.getElementById("crossCanvas");
-    if (!cv) { requestAnimationFrame(drawGlobe); return; }
-    var r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
-    if (cv.width !== Math.max(50, r.width * dpr)) { cv.width = Math.max(50, r.width * dpr); cv.height = Math.max(50, r.height * dpr); }
-    var ctx = cv.getContext("2d");
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    var W = r.width, H = r.height;
-    ctx.clearRect(0, 0, W, H);
-    var R = Math.min(W, H) * 0.36, cx = W / 2, cy = H / 2;
-    angY += 0.012;
-    var cyA = Math.cos(angY), syA = Math.sin(angY);
-    var pairs = window.__pairs || [], posSyms = window.__posSyms || {};
-    var vmax = 1, i;
-    pairs.forEach(function (m) { vmax = Math.max(vmax, m.vol || 0); });
-    // orbit + wireframe
-    ctx.strokeStyle = "rgba(180,255,57,.14)";
-    ctx.lineWidth = 1;
-    [-0.6, 0, 0.6].forEach(function (k) {
-      ctx.beginPath();
-      ctx.ellipse(cx, cy, R, R * 0.32, 0, 0, 7);
-      ctx.stroke();
-      void k;
-    });
-    ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.stroke();
-    // bintang latar
-    ctx.fillStyle = "rgba(255,255,255,.35)";
-    stars.forEach(function (s) {
-      s.x += 0.0006; if (s.x > 1) s.x = -1;
-      ctx.fillRect(cx + s.x * R * 1.6, cy + s.y * R * 1.6, 1.2, 1.2);
-    });
-    // node pair pada bola
-    var pts = [];
-    for (i = 0; i < nodes.length; i++) {
-      var p = nodes[i], m = pairs.length ? pairs[i % pairs.length] : null;
-      var x1 = p.x * cyA + p.z * syA, z1 = -p.x * syA + p.z * cyA, y1 = p.y;
-      var sx = cx + x1 * R, sy = cy - y1 * R, depth = (z1 + 1) / 2;
-      var sz = m ? (5 + 13 * Math.log(1 + (m.vol || 0) / vmax * 9) / Math.log(10)) : 3;
-      var col = "#b4ff39", glow = 8;
-      if (m) {
-        if (m.dss4 <= 30) { col = "#00e5ff"; glow = 14; }
-        else if (m.dss4 >= 70) { col = "#ff4d5e"; glow = 14; }
-        if (posSyms[m.sym]) { col = "#ffffff"; glow = 18; }
-      }
-      pts.push({x: sx, y: sy, z: depth, r: sz * (0.55 + depth * 0.7), col: col, glow: glow,
-                sym: m ? m.sym.replace("USDT", "") : "", open: m ? !!posSyms[m.sym] : false});
-    }
-    pts.sort(function (a, b) { return a.z - b.z; });
-    pts.forEach(function (q) {
-      ctx.globalAlpha = 0.35 + q.z * 0.65;
-      ctx.beginPath(); ctx.arc(q.x, q.y, q.r, 0, 7);
-      ctx.fillStyle = q.col; ctx.shadowColor = q.col; ctx.shadowBlur = q.glow; ctx.fill();
-      ctx.shadowBlur = 0;
-      if (q.z > 0.55) {
-        ctx.fillStyle = "#ffffff"; ctx.font = "9px ui-monospace,monospace"; ctx.textAlign = "center";
-        ctx.fillText(q.sym, q.x, q.y + q.r + 10);
-      }
-      if (q.open) {
-        ctx.beginPath(); ctx.arc(q.x, q.y, q.r + 4, 0, 7);
-        ctx.strokeStyle = "#ffffff"; ctx.stroke();
-      }
-    });
-    ctx.globalAlpha = 1;
-    requestAnimationFrame(drawGlobe);
-  }
+  // (bola 3D dicabut dari ORBIT: diganti neural burst)
 
   // ---- 1m candles BTC -> dipakai app.js drawBtc ----
   function pullKlines() {
@@ -128,11 +52,80 @@
     });
   }
 
-  drawGlobe(); pullKlines(); pullDss();
+  pullKlines(); pullDss();
+
+  // ---- IRIS RING (panel LIVE FEED): cincin partikel + tick vol real ----
+  var iris = [], it;
+  for (it = 0; it < 380; it++) {
+    var band = Math.random();
+    iris.push({a: Math.random() * Math.PI * 2,
+               r: band < 0.62 ? 0.30 + Math.random() * 0.05 : (band < 0.85 ? 0.42 + Math.random() * 0.1 : 0.55 + Math.random() * 0.2),
+               sp: 0.002 + Math.random() * 0.006, sz: 0.8 + Math.random() * 1.8});
+  }
+  var irisVol = 0, irisTicks = [];
+  setInterval(function () {
+    jget(API + "/api/v3/ticker/price?symbol=" + SYM, function (t) {
+      if (!t || !t.price) return;
+      irisTicks.push(parseFloat(t.price));
+      if (irisTicks.length > 30) irisTicks.shift();
+      var s = 0, j;
+      for (j = 1; j < irisTicks.length; j++) s += Math.abs(Math.log(irisTicks[j] / irisTicks[j - 1]));
+      irisVol = Math.max(0, Math.min(1, (s / irisTicks.length) * 1600));
+    });
+  }, 2000);
+  (function irisLoop() {
+    try {
+      var cv = document.getElementById("globeMain");
+      if (cv) {
+        var f = fitCv(cv), ctx = f.ctx;
+        ctx.setTransform(f.dpr, 0, 0, f.dpr, 0, 0);
+        var W = f.W, H = f.H;
+        ctx.fillStyle = "rgba(0,0,0,.3)";
+        ctx.fillRect(0, 0, W, H);
+        var cx = W / 2, cy = H / 2, R = Math.min(W, H) * 0.42;
+        var rot = Date.now() / 1000 * (0.12 + irisVol * 0.5), j;
+        // crosshair + tick ring
+        ctx.strokeStyle = "rgba(255,255,255,.12)";
+        ctx.beginPath(); ctx.moveTo(cx - R * 1.15, cy); ctx.lineTo(cx + R * 1.15, cy);
+        ctx.moveTo(cx, cy - R * 1.15); ctx.lineTo(cx, cy + R * 1.15); ctx.stroke();
+        for (j = 0; j < 48; j++) {
+          var ta = j / 48 * Math.PI * 2, big = j % 12 === 0;
+          ctx.strokeStyle = big ? "rgba(255,255,255,.4)" : "rgba(255,255,255,.12)";
+          ctx.beginPath();
+          ctx.moveTo(cx + Math.cos(ta) * R * 1.08, cy + Math.sin(ta) * R * 1.08);
+          ctx.lineTo(cx + Math.cos(ta) * R * (big ? 1.18 : 1.13), cy + Math.sin(ta) * R * (big ? 1.18 : 1.13));
+          ctx.stroke();
+        }
+        // lubang tengah
+        var grd = ctx.createRadialGradient(cx, cy, R * 0.1, cx, cy, R * 0.3);
+        grd.addColorStop(0, "rgba(0,0,0,0)");
+        grd.addColorStop(1, "rgba(0,0,0,.85)");
+        ctx.fillStyle = grd;
+        ctx.beginPath(); ctx.arc(cx, cy, R * 0.3, 0, 7); ctx.fill();
+        ctx.strokeStyle = "rgba(255,255,255,.25)";
+        ctx.beginPath(); ctx.arc(cx, cy, R * 0.3, 0, 7); ctx.stroke();
+        // partikel cincin (monokrom, tebal ikut volatilitas)
+        iris.forEach(function (p) {
+          p.a += p.sp * (1 + irisVol * 3);
+          var rr = p.r * (1 + Math.sin(Date.now() / 900 + p.a * 3) * 0.02 * (1 + irisVol * 2));
+          var x = cx + Math.cos(p.a) * rr * R * 1.35;
+          var y = cy + Math.sin(p.a) * rr * R * 1.35;
+          if (x < -10 || x > W + 10 || y < -10 || y > H + 10) return;
+          var al = 0.25 + (rr - 0.28) * 1.6;
+          ctx.fillStyle = "rgba(240,240,240," + Math.max(0.1, Math.min(0.9, al)).toFixed(2) + ")";
+          var sz = p.sz * (1 + irisVol * 1.5);
+          ctx.fillRect(x, y, sz, sz);
+        });
+        ctx.fillStyle = "rgba(238,243,230,.85)"; ctx.font = "9px ui-monospace,monospace"; ctx.textAlign = "left";
+        ctx.fillText("IRIS · " + SYM.replace("USDT", ""), 10, H - 10);
+      }
+    } catch (err) {}
+    requestAnimationFrame(irisLoop);
+  })();
   setInterval(pullKlines, 15000);
   setInterval(pullDss, 30000);
 
-  // ---- NEURAL BURST (panel LIVE FEED): tiap trade real = ledakan neuron ----
+  // ---- NEURAL BURST (panel NEURAL): tiap trade real = ledakan neuron ----
   var neurons = [], sparks = [], labels = [], energy = 0.3, ni;
   for (ni = 0; ni < 26; ni++) {
     var ring = ni % 2 ? 0.32 : 0.2, aa = (ni / 26) * Math.PI * 2;
@@ -163,7 +156,7 @@
   // (dicabut: diganti neural burst)
   (function neuralLoop() {
     try {
-      var cv = document.getElementById("globeMain");
+      var cv = document.getElementById("crossCanvas");
       if (cv) {
         var f = fitCv(cv), ctx = f.ctx;
         ctx.setTransform(f.dpr, 0, 0, f.dpr, 0, 0);
