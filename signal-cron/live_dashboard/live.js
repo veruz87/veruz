@@ -216,7 +216,26 @@
 
   // (radar dicabut: crossCanvas dipakai bola 3D)
 
-  // ---- TAPE trade live multi-koin (panel TAPE, aggTrades real, nonstop) ----
+  // ---- POSISI live: mark+pnl tiap 4 detik dari ticker browser ----
+  function fpl(v) { return v < 1 ? v.toFixed(4) : (v < 100 ? v.toFixed(2) : v.toFixed(1)); }
+  function moneyL(v) { return (v < 0 ? "-$" : "$") + Math.abs(v).toFixed(2); }
+  setInterval(function () {
+    var meta = window.__posMeta || [];
+    if (!meta.length) return;
+    jget(API + "/api/v3/ticker/price", function (all) {
+      if (!all || !all.length) return;
+      var px = {};
+      all.forEach(function (t) { px[t.symbol] = parseFloat(t.price); });
+      meta.forEach(function (p) {
+        var mk = document.getElementById("mk" + p.id), pn = document.getElementById("pn" + p.id);
+        if (!mk || !pn || !px[p.sym]) return;
+        var r = (px[p.sym] - p.entry) / p.entry, usd = r * p.dep;
+        mk.textContent = fpl(px[p.sym]);
+        pn.textContent = moneyL(usd);
+        pn.className = usd >= 0 ? "up" : "dn";
+      });
+    });
+  }, 4000);
   var TAPE = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT"], tapeLast = {};
   setInterval(function () {
     TAPE.forEach(function (s) {

@@ -320,6 +320,7 @@ def sleeve_iter(st, sym, tf, market):
     st["positions"][key] = {"entry": px * (1 + SLIP), "sl": sl,
                             "risk": abs(px * (1 + SLIP) - sl),
                             "qty": 1.0, "tp1": False, "mp": False, "mfe": 0.0,
+                            "dep": st["equity"].get(key, 0.0),
                             "t": datetime.datetime.utcnow().isoformat(), "src": src}
     return [f"{key} ENTRY {src}"]
 
@@ -347,7 +348,7 @@ def write_feed(st, market):
                    for s in sorted({s for s, _, _ in SLEEVES})],
         "positions": [{"sym": k.split("_")[0], "tf": k.split("_")[1], "entry": p["entry"],
                        "mark": market.get((k.split("_")[0], "px"), p["entry"]),
-                       "sl": p["sl"], "lev": 1} for k, p in st["positions"].items()],
+                       "sl": p["sl"], "lev": 1, "dep": p.get("dep", 0)} for k, p in st["positions"].items()],
         "log": st["trades"][-30:][::-1],
         "equityCurve": [], "scan": st.get("scan", [])[-24:][::-1], "wire": [],
     }

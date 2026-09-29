@@ -82,12 +82,17 @@
     // mood partikel dari open pnl
     var mood = openUsd >= 0 ? 1 : -1;
     if (!(d.positions || []).length) mood = 0;
-    // ringkas posisi kanan (data real)
-    var p2 = "<tr><th>Sym</th><th>TF</th><th>PnL $</th></tr>";
+    // ringkas posisi kanan: entry statis, mark+pnl dihidupkan live.js tiap detik
+    window.__posMeta = [];
+    function fp(v) { return v < 1 ? v.toFixed(4) : (v < 100 ? v.toFixed(2) : v.toFixed(1)); }
+    var p2 = "<tr><th>Sym</th><th>Entry</th><th>Mark</th><th>PnL $</th></tr>";
     (d.positions || []).forEach(function (p) {
       var r = (p.mark - p.entry) / p.entry;
-      var usd = r * eq * 0.05 * (a.leverage || 5);
-      p2 += "<tr><td>" + p.sym.replace("USDT", "") + "</td><td>" + p.tf + '</td><td class="' +
+      var usd = r * (p.dep || 0);
+      var id = p.sym + "_" + p.tf;
+      window.__posMeta.push({id: id, sym: p.sym, entry: p.entry, dep: p.dep || 0});
+      p2 += "<tr><td>" + p.sym.replace("USDT", "") + "</td><td>" + fp(p.entry) +
+        '</td><td id="mk' + id + '">' + fp(p.mark) + '</td><td id="pn' + id + '" class="' +
         (usd >= 0 ? "up" : "dn") + '">' + money(usd) + "</td></tr>";
     });
     if (!(d.positions || []).length)
