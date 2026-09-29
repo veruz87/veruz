@@ -351,7 +351,7 @@ def write_feed(st, market):
                        "mark": market.get((k.split("_")[0], "px"), p["entry"]),
                        "sl": p["sl"], "lev": 1, "dep": p.get("dep", 0)} for k, p in st["positions"].items()],
         "log": st["trades"][-30:][::-1],
-        "equityCurve": [], "scan": st.get("scan", [])[-24:][::-1], "wire": [],
+        "equityCurve": st.get("eqhist", []), "scan": st.get("scan", [])[-24:][::-1], "wire": [],
     }
     with open(FEED, "w", encoding="utf-8") as f:
         json.dump(feed, f)
@@ -440,7 +440,9 @@ def main():
                     scans.append(f"{sym}_{tf} ERR {e}")
                     print("sleeve error", sym, tf, e, flush=True)
             st["scan"] = (st.get("scan", []) + [{"t": wibnow().strftime("%H:%M"), "msg": m}
-                                                for m in scans])[-40:]
+                                                        for m in scans])[-40:]
+            eq_tot = sum(st["equity"].values()) + CASH
+            st["eqhist"] = (st.get("eqhist", []) + [round(eq_tot, 2)])[-500:]
             save_state(st)
             write_feed(st, market)
             print(wibnow().strftime("%H:%M:%S"), "ok", len(st["positions"]), "pos", flush=True)

@@ -118,6 +118,41 @@
     window.__pairs = d.market || [];
     window.__posSyms = {};
     (d.positions || []).forEach(function (p) { window.__posSyms[p.sym] = 1; });
+    // strip equity curve (data real feed)
+    (function () {
+      var cv = document.getElementById("eqCurve");
+      if (!cv) return;
+      var hist = d.equityCurve || [];
+      var r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+      cv.width = Math.max(50, r.width * dpr); cv.height = Math.max(50, r.height * dpr);
+      var ctx = cv.getContext("2d");
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      var W = r.width, H = r.height;
+      ctx.clearRect(0, 0, W, H);
+      if (hist.length < 2) {
+        ctx.fillStyle = "#5f6f57"; ctx.font = "11px ui-monospace,monospace";
+        ctx.fillText("menunggu riwayat…", 12, 20);
+        return;
+      }
+      var mn = Math.min.apply(null, hist), mx = Math.max.apply(null, hist), rg = (mx - mn) || 1;
+      var up = hist[hist.length - 1] >= hist[0];
+      var col = up ? "#b4ff39" : "#ff4d5e";
+      var grad = ctx.createLinearGradient(0, 0, 0, H);
+      grad.addColorStop(0, up ? "rgba(180,255,57,.35)" : "rgba(255,77,94,.35)");
+      grad.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.beginPath();
+      hist.forEach(function (v, i) {
+        var x = 4 + i * (W - 8) / (hist.length - 1);
+        var y = 5 + (1 - (v - mn) / rg) * (H - 10);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      ctx.strokeStyle = col; ctx.lineWidth = 1.8;
+      ctx.shadowColor = col; ctx.shadowBlur = 8; ctx.stroke(); ctx.shadowBlur = 0;
+      ctx.lineTo(W - 4, H); ctx.lineTo(4, H); ctx.closePath();
+      ctx.fillStyle = grad; ctx.fill();
+      ctx.fillStyle = "#eef3e6"; ctx.font = "10px ui-monospace,monospace"; ctx.textAlign = "left";
+      ctx.fillText("$" + hist[hist.length - 1].toFixed(2), 8, 14);
+    })();
     drawBtc(window.__liveBtc || d.btc1m || []);
     drawCross(window.__liveDss || d.dssX || {});
     seedField(mood, (d.positions || []).length, d.market || []);
