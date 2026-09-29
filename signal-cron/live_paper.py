@@ -36,28 +36,29 @@ FEE, SLIP = 0.0005, 0.000025
 COOL_H = {"4h": 48, "1d": 288}
 
 SLEEVES = [
-    ("BTCUSDT", "4h", 25.0), ("BTCUSDT", "1d", 25.0),
-    ("ZECUSDT", "4h", 1.25), ("ZECUSDT", "1d", 1.25),
-    ("ETHUSDT", "4h", 1.25), ("ETHUSDT", "1d", 1.25),
-    ("SOLUSDT", "4h", 1.25), ("SOLUSDT", "1d", 1.25),
-    ("XRPUSDT", "4h", 1.25), ("XRPUSDT", "1d", 1.25),
-    ("NEARUSDT", "4h", 1.25), ("NEARUSDT", "1d", 1.25),
-    ("SUIUSDT", "4h", 1.25), ("SUIUSDT", "1d", 1.25),
-    ("WLDUSDT", "4h", 1.25), ("WLDUSDT", "1d", 1.25),
-    ("TAOUSDT", "4h", 1.25), ("TAOUSDT", "1d", 1.25),
-    ("AVAXUSDT", "4h", 1.25), ("AVAXUSDT", "1d", 1.25),
-    ("UNIUSDT", "4h", 1.25), ("UNIUSDT", "1d", 1.25),
-    ("DOGEUSDT", "4h", 1.25), ("DOGEUSDT", "1d", 1.25),
-    ("BNBUSDT", "4h", 1.25), ("BNBUSDT", "1d", 1.25),
-    ("RUNEUSDT", "4h", 1.25), ("RUNEUSDT", "1d", 1.25),
-    ("DASHUSDT", "4h", 1.25), ("DASHUSDT", "1d", 1.25),
-    ("ENAUSDT", "4h", 1.25), ("ENAUSDT", "1d", 1.25),
-    ("LINKUSDT", "4h", 1.25), ("LINKUSDT", "1d", 1.25),
-    ("GRAMUSDT", "4h", 1.25), ("GRAMUSDT", "1d", 1.25),
-    ("VTHOUSDT", "4h", 1.25), ("VTHOUSDT", "1d", 1.25),
-    ("FILUSDT", "4h", 1.25), ("FILUSDT", "1d", 1.25),
-    ("ADAUSDT", "4h", 1.25), ("ADAUSDT", "1d", 1.25),
+    ("BTCUSDT", "4h", 12.5), ("BTCUSDT", "1d", 12.5),
+    ("ZECUSDT", "4h", 1.625), ("ZECUSDT", "1d", 1.625),
+    ("ETHUSDT", "4h", 1.625), ("ETHUSDT", "1d", 1.625),
+    ("SOLUSDT", "4h", 1.625), ("SOLUSDT", "1d", 1.625),
+    ("XRPUSDT", "4h", 1.625), ("XRPUSDT", "1d", 1.625),
+    ("NEARUSDT", "4h", 1.625), ("NEARUSDT", "1d", 1.625),
+    ("SUIUSDT", "4h", 1.625), ("SUIUSDT", "1d", 1.625),
+    ("WLDUSDT", "4h", 1.625), ("WLDUSDT", "1d", 1.625),
+    ("TAOUSDT", "4h", 1.625), ("TAOUSDT", "1d", 1.625),
+    ("AVAXUSDT", "4h", 1.625), ("AVAXUSDT", "1d", 1.625),
+    ("UNIUSDT", "4h", 1.625), ("UNIUSDT", "1d", 1.625),
+    ("DOGEUSDT", "4h", 1.625), ("DOGEUSDT", "1d", 1.625),
+    ("BNBUSDT", "4h", 1.625), ("BNBUSDT", "1d", 1.625),
+    ("RUNEUSDT", "4h", 1.625), ("RUNEUSDT", "1d", 1.625),
+    ("DASHUSDT", "4h", 1.625), ("DASHUSDT", "1d", 1.625),
+    ("ENAUSDT", "4h", 1.625), ("ENAUSDT", "1d", 1.625),
+    ("LINKUSDT", "4h", 1.625), ("LINKUSDT", "1d", 1.625),
+    ("GRAMUSDT", "4h", 1.625), ("GRAMUSDT", "1d", 1.625),
+    ("VTHOUSDT", "4h", 1.625), ("VTHOUSDT", "1d", 1.625),
+    ("FILUSDT", "4h", 1.625), ("FILUSDT", "1d", 1.625),
+    ("ADAUSDT", "4h", 1.625), ("ADAUSDT", "1d", 1.625),
 ]
+CASH = 10.0  # kas portofolio (rotasi koin baru + buffer)
 STATE = os.path.join(HERE, "paper_live_state.json")
 FEED = os.path.join(HERE, "live_data.json")
 POLL = 60
@@ -326,8 +327,8 @@ def sleeve_iter(st, sym, tf, market):
 
 
 def write_feed(st, market):
-    eq = sum(st["equity"].values())
-    start = sum(eq0 for _, _, eq0 in SLEEVES)
+    eq = sum(st["equity"].values()) + CASH
+    start = sum(eq0 for _, _, eq0 in SLEEVES) + CASH
     rets = [t["pnl"] for t in st["trades"]]
     n = len(rets)
     wins = [x for x in rets if x > 0]
@@ -340,7 +341,7 @@ def write_feed(st, market):
             "totalTrades": n, "wins": len(wins), "losses": n - len(wins),
             "winRate": round(len(wins) / n * 100, 2) if n else 0.0,
             "leverage": 1.0, "riskPct": 0.0, "maxDd": 0.0, "volUsd": 0,
-            "avgTrd": 0.0, "profitFactor": 0.0, "funding": 0.0,
+            "avgTrd": 0.0, "profitFactor": 0.0, "funding": 0.0, "cash": CASH,
         },
         "market": [{"sym": s, "price": market.get((s, "px"), 0),
                     "dss4": market.get((s, "4h_dss"), 0), "dss1": market.get((s, "1d_dss"), 0),
