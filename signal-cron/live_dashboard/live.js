@@ -31,7 +31,7 @@
     var W = r.width, H = r.height;
     ctx.clearRect(0, 0, W, H);
     var R = Math.min(W, H) * 0.36, cx = W / 2, cy = H / 2;
-    angY += 0.004;
+    angY += 0.012;
     var cyA = Math.cos(angY), syA = Math.sin(angY);
     var pairs = window.__pairs || [], posSyms = window.__posSyms || {};
     var vmax = 1, i;
