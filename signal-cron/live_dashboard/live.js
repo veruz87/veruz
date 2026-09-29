@@ -54,63 +54,110 @@
 
   pullKlines(); pullDss();
 
-  // ---- CHAMELEON kubah sisik (panel LIVE FEED): morph waktu + vol tick ----
-  var chamTicks = [], chamVol = 0;
+  // ---- ORBITAL MIND (panel LIVE FEED ala GROK): orbit warna + inti emas ----
+  var orbTicks = [], orbPulse = 0, orbWhales = [];
   setInterval(function () {
     jget(API + "/api/v3/ticker/price?symbol=" + SYM, function (t) {
       if (!t || !t.price) return;
-      chamTicks.push(parseFloat(t.price));
-      if (chamTicks.length > 40) chamTicks.shift();
-      var s = 0, j;
-      for (j = 1; j < chamTicks.length; j++) s += Math.abs(Math.log(chamTicks[j] / chamTicks[j - 1]));
-      chamVol = Math.max(0, Math.min(1, (s / chamTicks.length) * 1600));
+      orbTicks.push(parseFloat(t.price));
+      if (orbTicks.length > 40) orbTicks.shift();
+    });
+    jget(API + "/api/v3/aggTrades?symbol=" + SYM + "&limit=10", function (tr) {
+      if (!tr || !tr.length) return;
+      tr.forEach(function (x) {
+        var usd = parseFloat(x.q) * parseFloat(x.p);
+        if (usd >= 100000) {
+          orbPulse = Math.min(1.5, orbPulse + 0.7);
+          orbWhales.push({t: Date.now(), usd: usd, sell: !!x.m});
+        }
+      });
+      if (orbWhales.length > 6) orbWhales = orbWhales.slice(-6);
     });
   }, 2000);
-  (function chamLoop() {
+  var ORBITS = [
+    {c: "#b4ff39", rx: 1.0, ry: 0.34, tilt: 0.25, sp: 0.11},
+    {c: "#00e5ff", rx: 0.88, ry: 0.42, tilt: -0.35, sp: -0.09},
+    {c: "#ffffff", rx: 0.76, ry: 0.3, tilt: 0.5, sp: 0.13},
+    {c: "#ffb03a", rx: 0.64, ry: 0.5, tilt: -0.15, sp: -0.12},
+    {c: "#ff4d5e", rx: 0.54, ry: 0.36, tilt: 0.4, sp: 0.15},
+    {c: "#c792ea", rx: 0.44, ry: 0.46, tilt: -0.45, sp: -0.1},
+    {c: "#7fb3ff", rx: 0.34, ry: 0.34, tilt: 0.1, sp: 0.17}
+  ];
+  var orbDots = [];
+  ORBITS.forEach(function (o, ix) {
+    for (var j = 0; j < 3; j++) orbDots.push({o: ix, a: Math.random() * Math.PI * 2, sz: 1.5 + Math.random() * 2});
+  });
+  (function orbitalLoop() {
     try {
       var cv = document.getElementById("globeMain");
       if (cv) {
         var f = fitCv(cv), ctx = f.ctx;
         ctx.setTransform(f.dpr, 0, 0, f.dpr, 0, 0);
         var W = f.W, H = f.H;
-        ctx.fillStyle = "#050705";
+        ctx.fillStyle = "#040604";
         ctx.fillRect(0, 0, W, H);
-        var cx = W / 2, cy = H * 0.56, t = Date.now() / 1000;
-        var R = 15 + Math.min(W, H) / 34, DX = R * 1.5, DY = R * 1.28;
-        var cols = Math.ceil(W / DX) + 2, rows = Math.ceil(H / DY) + 2, r, c;
-        for (r = 0; r < rows; r++) {
-          for (c = 0; c < cols; c++) {
-            var x = c * DX + (r % 2 ? DX / 2 : 0) - DX, y = r * DY - DY;
-            var dx = (x - cx) / R, dy = (y - cy) / R;
-            var dist = Math.sqrt(dx * dx + dy * dy);
-            var wave = Math.sin(dist * 1.4 - t * (0.9 + chamVol * 2.2) + Math.sin(c * 0.5) * 0.8);
-            var rr = R * (0.42 + 0.1 * wave * (0.5 + chamVol));
-            var hue = (dist * 26 + t * 14 + chamVol * 120) % 360;
-            var li = 26 + 16 * wave + 10 * Math.max(0, 1 - dist / 9);
-            ctx.beginPath();
-            for (var k = 0; k < 6; k++) {
-              var a2 = Math.PI / 3 * k + Math.PI / 6;
-              var vx = x + Math.cos(a2) * rr, vy = y + Math.sin(a2) * rr;
-              if (k === 0) ctx.moveTo(vx, vy); else ctx.lineTo(vx, vy);
-            }
-            ctx.closePath();
-            ctx.fillStyle = "hsl(" + Math.round(hue) + ",70%," + Math.max(8, Math.min(60, Math.round(li))) + "%)";
-            ctx.fill();
-            ctx.strokeStyle = "rgba(0,0,0,.55)";
-            ctx.stroke();
-          }
-        }
-        // vignette kubah
-        var g = ctx.createRadialGradient(cx, cy, 10, cx, cy, Math.max(W, H) * 0.75);
-        g.addColorStop(0, "rgba(0,0,0,0)");
-        g.addColorStop(1, "rgba(0,0,0,.72)");
+        var cx = W / 2, cy = H / 2, R = Math.min(W, H) * 0.4;
+        orbPulse = Math.max(0, orbPulse * 0.97);
+        var t = Date.now() / 1000;
+        // rel orbit (dotted trail)
+        ORBITS.forEach(function (o, ix) {
+          ctx.save();
+          ctx.translate(cx, cy);
+          ctx.rotate(o.tilt);
+          ctx.strokeStyle = o.c;
+          ctx.globalAlpha = 0.28;
+          ctx.setLineDash([2, 5]);
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.ellipse(0, 0, R * o.rx, R * o.ry, 0, 0, 7);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.restore();
+        });
+        // titik pejalan
+        orbDots.forEach(function (d) {
+          var o = ORBITS[d.o];
+          d.a += o.sp * 0.03 * (1 + orbPulse);
+          var ex = Math.cos(d.a) * R * o.rx, ey = Math.sin(d.a) * R * o.ry;
+          var x = cx + ex * Math.cos(o.tilt) - ey * Math.sin(o.tilt);
+          var y = cy + ex * Math.sin(o.tilt) + ey * Math.cos(o.tilt);
+          ctx.globalAlpha = 0.9;
+          ctx.fillStyle = o.c;
+          ctx.shadowColor = o.c; ctx.shadowBlur = 8;
+          ctx.beginPath(); ctx.arc(x, y, d.sz, 0, 7); ctx.fill();
+          ctx.shadowBlur = 0;
+        });
+        ctx.globalAlpha = 1;
+        // inti emas berdenyut
+        var pr = R * 0.16 * (1 + orbPulse * 0.7 + Math.sin(t * 3) * 0.06);
+        var g = ctx.createRadialGradient(cx, cy, 1, cx, cy, pr * 3);
+        g.addColorStop(0, "rgba(255,220,150,.95)");
+        g.addColorStop(0.35, "rgba(255,170,60,.55)");
+        g.addColorStop(1, "rgba(255,140,30,0)");
         ctx.fillStyle = g;
-        ctx.fillRect(0, 0, W, H);
-        ctx.fillStyle = "rgba(238,243,230,.85)"; ctx.font = "9px ui-monospace,monospace"; ctx.textAlign = "left";
-        ctx.fillText("CHAMELEON", 10, H - 10);
+        ctx.beginPath(); ctx.arc(cx, cy, pr * 3, 0, 7); ctx.fill();
+        ctx.fillStyle = "#ffe9c4";
+        ctx.beginPath(); ctx.arc(cx, cy, pr * 0.55, 0, 7); ctx.fill();
+        // label whale terbaru
+        var now = Date.now();
+        orbWhales = orbWhales.filter(function (s) { return now - s.t < 15000; });
+        orbWhales.forEach(function (s, ix) {
+          var age = (now - s.t) / 15000;
+          ctx.globalAlpha = 1 - age;
+          ctx.fillStyle = s.sell ? "#ff4d5e" : "#b4ff39";
+          ctx.font = "bold 10px ui-monospace,monospace"; ctx.textAlign = "right";
+          ctx.fillText("$" + (s.usd / 1000).toFixed(0) + "K", W - 10, 20 + ix * 16);
+          ctx.globalAlpha = 1;
+        });
+        // telemetri sudut
+        var last = orbTicks.length ? orbTicks[orbTicks.length - 1] : 0;
+        ctx.fillStyle = "#eef3e6"; ctx.font = "bold 13px ui-monospace,monospace"; ctx.textAlign = "left";
+        ctx.fillText(last ? last.toLocaleString("en-US") : "BTC", 10, 20);
+        ctx.fillStyle = "rgba(238,243,230,.6)"; ctx.font = "9px ui-monospace,monospace";
+        ctx.fillText("ORBITAL · LIVE", 10, H - 10);
       }
     } catch (err) {}
-    requestAnimationFrame(chamLoop);
+    requestAnimationFrame(orbitalLoop);
   })();
   setInterval(pullKlines, 15000);
   setInterval(pullDss, 30000);
