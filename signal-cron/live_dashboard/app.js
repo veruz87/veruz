@@ -57,8 +57,8 @@
       topHtml += '<div class="pair hot" style="' + heat(m) + '"><span class="sym">' +
         m.sym.replace("USDT", "") + '</span><span class="px">' + m.dss4.toFixed(0) + "</span>" +
         '<div class="meta"><span>$' + Number(m.price).toLocaleString("en-US",
-          {maximumFractionDigits: m.price < 100 ? 3 : 1}) + "</span><span>" +
-        (open ? "IN POS" : "FLAT") + "</span></div></div>";
+          {maximumFractionDigits: m.price < 100 ? 3 : 1}) + "</span>" +
+        (open ? "<span>IN POS</span>" : "<span></span>") + "</div></div>";
     });
     var rt = document.getElementById("railTop");
     if (rt) rt.innerHTML = topHtml;
