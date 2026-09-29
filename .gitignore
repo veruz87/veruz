@@ -1,3 +1,4 @@
 *.csv
+!signal-cron/results/paper_trades.csv
 __pycache__/
 *.pyc
