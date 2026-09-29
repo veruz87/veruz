@@ -54,115 +54,99 @@
 
   pullKlines(); pullDss();
 
-  // ---- ORBITAL MIND (panel LIVE FEED ala GROK): orbit warna + inti emas ----
-  var orbTicks = [], orbPulse = 0, orbWhales = [];
+  // ---- SPIRAL BURST ala WOLFBRAIN (panel LIVE FEED): spiral emas + label pil ----
+  var spTicks = [], spPulse = 0, spWhales = [], spTrades = 0;
   setInterval(function () {
     jget(API + "/api/v3/ticker/price?symbol=" + SYM, function (t) {
       if (!t || !t.price) return;
-      orbTicks.push(parseFloat(t.price));
-      if (orbTicks.length > 40) orbTicks.shift();
+      spTicks.push(parseFloat(t.price));
+      if (spTicks.length > 40) spTicks.shift();
     });
-    jget(API + "/api/v3/aggTrades?symbol=" + SYM + "&limit=10", function (tr) {
+    jget(API + "/api/v3/aggTrades?symbol=" + SYM + "&limit=20", function (tr) {
       if (!tr || !tr.length) return;
       tr.forEach(function (x) {
+        if ((window.__spLast || 0) >= x.a) return;
+        window.__spLast = Math.max(window.__spLast || 0, x.a);
         var usd = parseFloat(x.q) * parseFloat(x.p);
-        if (usd >= 100000) {
-          orbPulse = Math.min(1.5, orbPulse + 0.7);
-          orbWhales.push({t: Date.now(), usd: usd, sell: !!x.m});
+        spTrades++;
+        if (usd >= 30000) {
+          spPulse = Math.min(1.6, spPulse + (usd >= 100000 ? 0.8 : 0.3));
+          spWhales.push({t: Date.now(), usd: usd, sell: !!x.m, x: 0.3 + Math.random() * 0.4, y: 0.3 + Math.random() * 0.4});
+        } else {
+          spPulse = Math.min(1.6, spPulse + 0.03);
         }
       });
-      if (orbWhales.length > 6) orbWhales = orbWhales.slice(-6);
+      if (spWhales.length > 6) spWhales = spWhales.slice(-6);
     });
   }, 2000);
-  var ORBITS = [
-    {c: "#b4ff39", rx: 1.0, ry: 0.34, tilt: 0.25, sp: 0.11},
-    {c: "#00e5ff", rx: 0.88, ry: 0.42, tilt: -0.35, sp: -0.09},
-    {c: "#ffffff", rx: 0.76, ry: 0.3, tilt: 0.5, sp: 0.13},
-    {c: "#ffb03a", rx: 0.64, ry: 0.5, tilt: -0.15, sp: -0.12},
-    {c: "#ff4d5e", rx: 0.54, ry: 0.36, tilt: 0.4, sp: 0.15},
-    {c: "#c792ea", rx: 0.44, ry: 0.46, tilt: -0.45, sp: -0.1},
-    {c: "#7fb3ff", rx: 0.34, ry: 0.34, tilt: 0.1, sp: 0.17}
+  var SPARMS = [
+    {c: [255, 176, 58], off: 0}, {c: [180, 255, 57], off: 2.09}, {c: [255, 77, 94], off: 4.19}
   ];
-  var orbDots = [];
-  ORBITS.forEach(function (o, ix) {
-    for (var j = 0; j < 6; j++) orbDots.push({o: ix, a: Math.random() * Math.PI * 2, sz: 1.5 + Math.random() * 2});
-  });
-  (function orbitalLoop() {
+  (function spiralLoop() {
     try {
       var cv = document.getElementById("globeMain");
       if (cv) {
         var f = fitCv(cv), ctx = f.ctx;
         ctx.setTransform(f.dpr, 0, 0, f.dpr, 0, 0);
         var W = f.W, H = f.H;
-        // jejak gerak (motion trail) ala video
-        ctx.fillStyle = "rgba(4,6,4,.32)";
+        ctx.fillStyle = "rgba(5,4,3,.3)";
         ctx.fillRect(0, 0, W, H);
-        var cx = W / 2, cy = H / 2, RX = W * 0.44, RY = H * 0.44;
-        orbPulse = Math.max(0, orbPulse * 0.97);
-        var t = Date.now() / 1000;
-        // rel orbit penuhi panel
-        ORBITS.forEach(function (o, ix) {
-          ctx.save();
-          ctx.translate(cx, cy);
-          ctx.rotate(o.tilt);
-          ctx.strokeStyle = o.c;
-          ctx.globalAlpha = 0.3;
-          ctx.setLineDash([2, 5]);
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.ellipse(0, 0, RX * o.rx, RY * o.rx, 0, 0, 7);
-          ctx.stroke();
-          ctx.setLineDash([]);
-          ctx.restore();
-        });
-        // titik pejalan + kelip
-        orbDots.forEach(function (d) {
-          var o = ORBITS[d.o];
-          d.a += o.sp * 0.03 * (1 + orbPulse);
-          var ex = Math.cos(d.a) * RX * o.rx, ey = Math.sin(d.a) * RY * o.rx;
-          var x = cx + ex * Math.cos(o.tilt) - ey * Math.sin(o.tilt);
-          var y = cy + ex * Math.sin(o.tilt) + ey * Math.cos(o.tilt);
-          var tw = 0.6 + 0.4 * Math.sin(t * 5 + d.a * 7);
-          ctx.globalAlpha = 0.95;
-          ctx.fillStyle = o.c;
-          ctx.shadowColor = o.c; ctx.shadowBlur = 10;
-          ctx.beginPath(); ctx.arc(x, y, d.sz * tw + orbPulse, 0, 7); ctx.fill();
+        var cx = W / 2, cy = H / 2, R = Math.min(W, H) * 0.44;
+        spPulse = Math.max(0.1, spPulse * 0.978);
+        var t = Date.now() / 1000, rot = t * (0.25 + spPulse * 0.5), j;
+        // 3 lengan spiral logaritmik + titik api
+        SPARMS.forEach(function (A, ai) {
+          var pts = 90, k;
+          ctx.lineWidth = 1.4;
+          for (k = 0; k < pts; k++) {
+            var th = k / pts * Math.PI * 4.2 + rot * (ai % 2 ? 1 : -1) + A.off;
+            var rr = R * 0.12 * Math.exp(0.22 * (k / pts * 4.2)) * (1 + spPulse * 0.25);
+            var x = cx + Math.cos(th) * rr, y = cy + Math.sin(th) * rr * 0.8;
+            var hot = 0.35 + 0.65 * (k / pts);
+            ctx.fillStyle = "rgba(" + A.c[0] + "," + A.c[1] + "," + A.c[2] + "," + (0.25 + hot * 0.6).toFixed(2) + ")";
+            ctx.shadowColor = "rgb(" + A.c[0] + "," + A.c[1] + "," + A.c[2] + ")";
+            ctx.shadowBlur = 4 + hot * 8 * (0.5 + spPulse);
+            ctx.beginPath(); ctx.arc(x, y, 0.8 + hot * 2.2, 0, 7); ctx.fill();
+          }
           ctx.shadowBlur = 0;
         });
-        ctx.globalAlpha = 1;
-        // inti emas berdenyut
-        var pr = Math.min(RX, RY) * 0.22 * (1 + orbPulse * 0.8 + Math.sin(t * 3) * 0.07);
-        var g = ctx.createRadialGradient(cx, cy, 1, cx, cy, pr * 3.2);
-        g.addColorStop(0, "rgba(255,220,150,.95)");
-        g.addColorStop(0.35, "rgba(255,170,60,.55)");
+        // inti
+        var pr = R * 0.1 * (1 + spPulse * 0.9);
+        var g = ctx.createRadialGradient(cx, cy, 1, cx, cy, pr * 3.4);
+        g.addColorStop(0, "rgba(255,225,170,.95)");
+        g.addColorStop(0.4, "rgba(255,160,50,.5)");
         g.addColorStop(1, "rgba(255,140,30,0)");
         ctx.fillStyle = g;
-        ctx.beginPath(); ctx.arc(cx, cy, pr * 3.2, 0, 7); ctx.fill();
-        ctx.fillStyle = "#ffe9c4";
-        ctx.beginPath(); ctx.arc(cx, cy, pr * 0.55, 0, 7); ctx.fill();
-        // label whale terbaru
+        ctx.beginPath(); ctx.arc(cx, cy, pr * 3.4, 0, 7); ctx.fill();
+        // label pil whale melayang
         var now = Date.now();
-        orbWhales = orbWhales.filter(function (s) { return now - s.t < 15000; });
-        orbWhales.forEach(function (s, ix) {
-          var age = (now - s.t) / 15000;
+        spWhales = spWhales.filter(function (s) { return now - s.t < 12000; });
+        spWhales.forEach(function (s) {
+          var age = (now - s.t) / 12000;
+          var x = s.x * W, y = s.y * H - age * 40;
+          var txt = (s.sell ? "whale sell " : "whale buy ") + "$" + (s.usd / 1000).toFixed(0) + "K";
           ctx.globalAlpha = 1 - age;
-          ctx.fillStyle = s.sell ? "#ff4d5e" : "#b4ff39";
-          ctx.font = "bold 10px ui-monospace,monospace"; ctx.textAlign = "right";
-          ctx.fillText("$" + (s.usd / 1000).toFixed(0) + "K", W - 10, 20 + ix * 16);
+          ctx.font = "bold 9px ui-monospace,monospace";
+          var tw = ctx.measureText(txt).width + 14;
+          ctx.fillStyle = s.sell ? "rgba(255,77,94,.85)" : "rgba(180,255,57,.85)";
+          ctx.beginPath();
+          if (ctx.roundRect) ctx.roundRect(x - tw / 2, y - 10, tw, 16, 8); else ctx.rect(x - tw / 2, y - 10, tw, 16);
+          ctx.fill();
+          ctx.fillStyle = "#000"; ctx.textAlign = "center";
+          ctx.fillText(txt, x, y + 2);
           ctx.globalAlpha = 1;
         });
-        // HUD sudut: harga + meter energi
-        var last = orbTicks.length ? orbTicks[orbTicks.length - 1] : 0;
-        ctx.fillStyle = "#eef3e6"; ctx.font = "bold 14px ui-monospace,monospace"; ctx.textAlign = "left";
-        ctx.fillText(last ? last.toLocaleString("en-US") : "BTC", 10, 22);
-        ctx.fillStyle = "rgba(238,243,230,.6)"; ctx.font = "9px ui-monospace,monospace";
-        var eb = Math.round(orbPulse * 100);
-        ctx.fillText("NRG " + eb + "%", 10, H - 10);
-        ctx.fillStyle = "rgba(180,255,57,.5)";
-        ctx.fillRect(10, H - 7, 60 * Math.min(1, orbPulse), 2);
+        // telemetri sudut (harga kanan-bawah, tidak tabrakan tag)
+        var last = spTicks.length ? spTicks[spTicks.length - 1] : 0;
+        ctx.fillStyle = "#ffb03a"; ctx.font = "bold 14px ui-monospace,monospace"; ctx.textAlign = "right";
+        ctx.fillText(last ? last.toLocaleString("en-US") : "BTC", W - 10, H - 26);
+        ctx.fillStyle = "rgba(238,243,230,.65)"; ctx.font = "9px ui-monospace,monospace"; ctx.textAlign = "right";
+        ctx.fillText(spTrades + " trades", W - 10, H - 12);
+        ctx.textAlign = "left";
+        ctx.fillText("SPIRAL · LIVE", 10, H - 12);
       }
     } catch (err) {}
-    requestAnimationFrame(orbitalLoop);
+    requestAnimationFrame(spiralLoop);
   })();
   setInterval(pullKlines, 15000);
   setInterval(pullDss, 30000);
