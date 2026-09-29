@@ -43,30 +43,32 @@
     }
     $("clock").textContent = d.updated ? d.updated + " WIB" : "--:--:--";
 
-    // rail pairs: grup TRADE penuh + WATCH ringkas (data real)
-    var rail = "";
-    var tm = (d.market || []).filter(function (m) { return m.trade; });
-    var wm = (d.market || []).filter(function (m) { return !m.trade; });
-    function card(m, compact) {
-      var hot = m.dss4 <= 35, hotDn = m.dss4 >= 65;
-      var lamp = hot ? "on" : (hotDn ? "warn" : "");
+    // TOP MOVERS: 5 paling ekstrem + HEATMAP 21 tile (data real feed)
+    var mk = (d.market || []).slice();
+    function heat(m) {
+      if (m.dss4 <= 30) return "background:rgba(0,229,255,.22);border-color:#00e5ff";
+      if (m.dss4 >= 70) return "background:rgba(255,77,94,.22);border-color:#ff4d5e";
+      return "background:rgba(180,255,57,.08);border-color:var(--line)";
+    }
+    mk.sort(function (a, b) { return Math.abs(b.dss4 - 50) - Math.abs(a.dss4 - 50); });
+    var topHtml = "";
+    mk.slice(0, 5).forEach(function (m) {
       var open = (d.positions || []).some(function (p) { return p.sym === m.sym; });
-      var v = m.vol || 0;
-      var vs = v >= 1e9 ? (v/1e9).toFixed(1)+"B" : (v >= 1e6 ? (v/1e6).toFixed(0)+"M" : (v/1e3).toFixed(0)+"K");
-      return '<div class="pair"><span class="lamp ' + lamp + '"></span><span class="sym">' +
-        m.sym.replace("USDT", "") + '</span><span class="px">$' +
-        Number(m.price).toLocaleString("en-US", {maximumFractionDigits: m.price < 100 ? 3 : 1}) + "</span>" +
-        '<div class="dssbar"><i style="width:' + Math.max(0, Math.min(100, m.dss4)) + '%;' +
-        (m.dss4 >= 70 || m.dss4 <= 30 ? "background:var(--amber)" : "") + '"></i></div>' +
-        '<div class="meta"><span>4H ' + m.dss4.toFixed(0) + (m.dss1 ? ' · 1D ' + m.dss1.toFixed(0) : "") +
-        " · VOL " + vs + "</span><span>" + (open ? "IN POS" : (m.trade ? "FLAT" : "WATCH")) + "</span></div></div>";
-    }
-    tm.forEach(function (m) { rail += card(m); });
-    if (wm.length) {
-      rail += '<div class="meta" style="padding:4px 2px">— WATCH —</div>';
-      wm.forEach(function (m) { rail += card(m); });
-    }
-    $("railPairs").innerHTML = rail;
+      topHtml += '<div class="pair hot" style="' + heat(m) + '"><span class="sym">' +
+        m.sym.replace("USDT", "") + '</span><span class="px">' + m.dss4.toFixed(0) + "</span>" +
+        '<div class="meta"><span>$' + Number(m.price).toLocaleString("en-US",
+          {maximumFractionDigits: m.price < 100 ? 3 : 1}) + "</span><span>" +
+        (open ? "IN POS" : "FLAT") + "</span></div></div>";
+    });
+    var rt = document.getElementById("railTop");
+    if (rt) rt.innerHTML = topHtml;
+    var hg = "";
+    (d.market || []).forEach(function (m) {
+      hg += '<div class="tile" style="' + heat(m) + '"><b>' + m.sym.replace("USDT", "") +
+        "</b><span>" + m.dss4.toFixed(0) + "</span></div>";
+    });
+    var hgel = document.getElementById("heatGrid");
+    if (hgel) hgel.innerHTML = hg;
 
     // openUsd untuk mood partikel (tabel tengah dihapus, pindah kanan)
     var openUsd = 0;

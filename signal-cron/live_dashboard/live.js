@@ -54,73 +54,70 @@
 
   pullKlines(); pullDss();
 
-  // ---- IRIS RING (panel LIVE FEED): cincin partikel + tick vol real ----
-  var iris = [], it;
-  for (it = 0; it < 380; it++) {
-    var band = Math.random();
-    iris.push({a: Math.random() * Math.PI * 2,
-               r: band < 0.62 ? 0.30 + Math.random() * 0.05 : (band < 0.85 ? 0.42 + Math.random() * 0.1 : 0.55 + Math.random() * 0.2),
-               sp: 0.002 + Math.random() * 0.006, sz: 0.8 + Math.random() * 1.8});
-  }
-  var irisVol = 0, irisTicks = [];
+  // ---- ECG jantung BTC (panel LIVE FEED): tick real + spike whale ----
+  var ecg = [], ecgTicks = [], ecgSpikes = [];
   setInterval(function () {
     jget(API + "/api/v3/ticker/price?symbol=" + SYM, function (t) {
       if (!t || !t.price) return;
-      irisTicks.push(parseFloat(t.price));
-      if (irisTicks.length > 30) irisTicks.shift();
-      var s = 0, j;
-      for (j = 1; j < irisTicks.length; j++) s += Math.abs(Math.log(irisTicks[j] / irisTicks[j - 1]));
-      irisVol = Math.max(0, Math.min(1, (s / irisTicks.length) * 1600));
+      ecgTicks.push(parseFloat(t.price));
+      if (ecgTicks.length > 160) ecgTicks.shift();
+    });
+    jget(API + "/api/v3/aggTrades?symbol=" + SYM + "&limit=10", function (tr) {
+      if (!tr || !tr.length) return;
+      tr.forEach(function (x) {
+        var usd = parseFloat(x.q) * parseFloat(x.p);
+        if (usd >= 100000) ecgSpikes.push({t: Date.now(), usd: usd, sell: !!x.m});
+      });
+      if (ecgSpikes.length > 8) ecgSpikes = ecgSpikes.slice(-8);
     });
   }, 2000);
-  (function irisLoop() {
+  (function ecgLoop() {
     try {
       var cv = document.getElementById("globeMain");
-      if (cv) {
+      if (cv && ecgTicks.length > 5) {
         var f = fitCv(cv), ctx = f.ctx;
         ctx.setTransform(f.dpr, 0, 0, f.dpr, 0, 0);
         var W = f.W, H = f.H;
-        ctx.fillStyle = "rgba(0,0,0,.3)";
+        ctx.fillStyle = "rgba(0,0,0,.35)";
         ctx.fillRect(0, 0, W, H);
-        var cx = W / 2, cy = H / 2, R = Math.min(W, H) * 0.42;
-        var rot = Date.now() / 1000 * (0.12 + irisVol * 0.5), j;
-        // crosshair + tick ring
-        ctx.strokeStyle = "rgba(255,255,255,.12)";
-        ctx.beginPath(); ctx.moveTo(cx - R * 1.15, cy); ctx.lineTo(cx + R * 1.15, cy);
-        ctx.moveTo(cx, cy - R * 1.15); ctx.lineTo(cx, cy + R * 1.15); ctx.stroke();
-        for (j = 0; j < 48; j++) {
-          var ta = j / 48 * Math.PI * 2, big = j % 12 === 0;
-          ctx.strokeStyle = big ? "rgba(255,255,255,.4)" : "rgba(255,255,255,.12)";
-          ctx.beginPath();
-          ctx.moveTo(cx + Math.cos(ta) * R * 1.08, cy + Math.sin(ta) * R * 1.08);
-          ctx.lineTo(cx + Math.cos(ta) * R * (big ? 1.18 : 1.13), cy + Math.sin(ta) * R * (big ? 1.18 : 1.13));
-          ctx.stroke();
-        }
-        // lubang tengah
-        var grd = ctx.createRadialGradient(cx, cy, R * 0.1, cx, cy, R * 0.3);
-        grd.addColorStop(0, "rgba(0,0,0,0)");
-        grd.addColorStop(1, "rgba(0,0,0,.85)");
-        ctx.fillStyle = grd;
-        ctx.beginPath(); ctx.arc(cx, cy, R * 0.3, 0, 7); ctx.fill();
-        ctx.strokeStyle = "rgba(255,255,255,.25)";
-        ctx.beginPath(); ctx.arc(cx, cy, R * 0.3, 0, 7); ctx.stroke();
-        // partikel cincin (monokrom, tebal ikut volatilitas)
-        iris.forEach(function (p) {
-          p.a += p.sp * (1 + irisVol * 3);
-          var rr = p.r * (1 + Math.sin(Date.now() / 900 + p.a * 3) * 0.02 * (1 + irisVol * 2));
-          var x = cx + Math.cos(p.a) * rr * R * 1.35;
-          var y = cy + Math.sin(p.a) * rr * R * 1.35;
-          if (x < -10 || x > W + 10 || y < -10 || y > H + 10) return;
-          var al = 0.25 + (rr - 0.28) * 1.6;
-          ctx.fillStyle = "rgba(240,240,240," + Math.max(0.1, Math.min(0.9, al)).toFixed(2) + ")";
-          var sz = p.sz * (1 + irisVol * 1.5);
-          ctx.fillRect(x, y, sz, sz);
+        // grid redup
+        ctx.strokeStyle = "rgba(255,255,255,.06)";
+        var gy;
+        for (gy = 0; gy < H; gy += 22) { ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke(); }
+        var data = ecgTicks.slice(-120);
+        var mn = Math.min.apply(null, data), mx = Math.max.apply(null, data), rg = (mx - mn) || 1;
+        var last = data[data.length - 1], prev = data[data.length - 2];
+        var up = last >= prev;
+        // garis detak
+        ctx.beginPath();
+        data.forEach(function (v, i) {
+          var x = i / (data.length - 1) * W;
+          var y = H * 0.15 + (1 - (v - mn) / rg) * H * 0.7;
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
         });
-        ctx.fillStyle = "rgba(238,243,230,.85)"; ctx.font = "9px ui-monospace,monospace"; ctx.textAlign = "left";
-        ctx.fillText("IRIS · " + SYM.replace("USDT", ""), 10, H - 10);
+        ctx.strokeStyle = up ? "#b4ff39" : "#ff4d5e";
+        ctx.lineWidth = 2;
+        ctx.shadowColor = ctx.strokeStyle; ctx.shadowBlur = 10;
+        ctx.stroke(); ctx.shadowBlur = 0; ctx.lineWidth = 1;
+        // spike whale: kilat vertikal + nominal
+        var now = Date.now();
+        ecgSpikes = ecgSpikes.filter(function (s) { return now - s.t < 12000; });
+        ecgSpikes.forEach(function (s) {
+          var age = (now - s.t) / 12000, x = W - age * W * 0.4;
+          ctx.globalAlpha = 1 - age;
+          ctx.strokeStyle = s.sell ? "#ff4d5e" : "#b4ff39";
+          ctx.beginPath(); ctx.moveTo(x, 6); ctx.lineTo(x, H - 6); ctx.stroke();
+          ctx.fillStyle = "#fff"; ctx.font = "bold 10px ui-monospace,monospace"; ctx.textAlign = "center";
+          ctx.fillText("$" + (s.usd / 1000).toFixed(0) + "K", x, 16);
+          ctx.globalAlpha = 1;
+        });
+        // harga besar kanan
+        ctx.fillStyle = up ? "#b4ff39" : "#ff4d5e";
+        ctx.font = "bold 15px ui-monospace,monospace"; ctx.textAlign = "right";
+        ctx.fillText(last.toLocaleString("en-US"), W - 8, 22);
       }
     } catch (err) {}
-    requestAnimationFrame(irisLoop);
+    requestAnimationFrame(ecgLoop);
   })();
   setInterval(pullKlines, 15000);
   setInterval(pullDss, 30000);
