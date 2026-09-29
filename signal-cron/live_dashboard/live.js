@@ -85,7 +85,7 @@
   ];
   var orbDots = [];
   ORBITS.forEach(function (o, ix) {
-    for (var j = 0; j < 3; j++) orbDots.push({o: ix, a: Math.random() * Math.PI * 2, sz: 1.5 + Math.random() * 2});
+    for (var j = 0; j < 6; j++) orbDots.push({o: ix, a: Math.random() * Math.PI * 2, sz: 1.5 + Math.random() * 2});
   });
   (function orbitalLoop() {
     try {
@@ -94,48 +94,50 @@
         var f = fitCv(cv), ctx = f.ctx;
         ctx.setTransform(f.dpr, 0, 0, f.dpr, 0, 0);
         var W = f.W, H = f.H;
-        ctx.fillStyle = "#040604";
+        // jejak gerak (motion trail) ala video
+        ctx.fillStyle = "rgba(4,6,4,.32)";
         ctx.fillRect(0, 0, W, H);
-        var cx = W / 2, cy = H / 2, R = Math.min(W, H) * 0.4;
+        var cx = W / 2, cy = H / 2, RX = W * 0.44, RY = H * 0.44;
         orbPulse = Math.max(0, orbPulse * 0.97);
         var t = Date.now() / 1000;
-        // rel orbit (dotted trail)
+        // rel orbit penuhi panel
         ORBITS.forEach(function (o, ix) {
           ctx.save();
           ctx.translate(cx, cy);
           ctx.rotate(o.tilt);
           ctx.strokeStyle = o.c;
-          ctx.globalAlpha = 0.28;
+          ctx.globalAlpha = 0.3;
           ctx.setLineDash([2, 5]);
           ctx.lineWidth = 1;
           ctx.beginPath();
-          ctx.ellipse(0, 0, R * o.rx, R * o.ry, 0, 0, 7);
+          ctx.ellipse(0, 0, RX * o.rx, RY * o.rx, 0, 0, 7);
           ctx.stroke();
           ctx.setLineDash([]);
           ctx.restore();
         });
-        // titik pejalan
+        // titik pejalan + kelip
         orbDots.forEach(function (d) {
           var o = ORBITS[d.o];
           d.a += o.sp * 0.03 * (1 + orbPulse);
-          var ex = Math.cos(d.a) * R * o.rx, ey = Math.sin(d.a) * R * o.ry;
+          var ex = Math.cos(d.a) * RX * o.rx, ey = Math.sin(d.a) * RY * o.rx;
           var x = cx + ex * Math.cos(o.tilt) - ey * Math.sin(o.tilt);
           var y = cy + ex * Math.sin(o.tilt) + ey * Math.cos(o.tilt);
-          ctx.globalAlpha = 0.9;
+          var tw = 0.6 + 0.4 * Math.sin(t * 5 + d.a * 7);
+          ctx.globalAlpha = 0.95;
           ctx.fillStyle = o.c;
-          ctx.shadowColor = o.c; ctx.shadowBlur = 8;
-          ctx.beginPath(); ctx.arc(x, y, d.sz, 0, 7); ctx.fill();
+          ctx.shadowColor = o.c; ctx.shadowBlur = 10;
+          ctx.beginPath(); ctx.arc(x, y, d.sz * tw + orbPulse, 0, 7); ctx.fill();
           ctx.shadowBlur = 0;
         });
         ctx.globalAlpha = 1;
         // inti emas berdenyut
-        var pr = R * 0.16 * (1 + orbPulse * 0.7 + Math.sin(t * 3) * 0.06);
-        var g = ctx.createRadialGradient(cx, cy, 1, cx, cy, pr * 3);
+        var pr = Math.min(RX, RY) * 0.22 * (1 + orbPulse * 0.8 + Math.sin(t * 3) * 0.07);
+        var g = ctx.createRadialGradient(cx, cy, 1, cx, cy, pr * 3.2);
         g.addColorStop(0, "rgba(255,220,150,.95)");
         g.addColorStop(0.35, "rgba(255,170,60,.55)");
         g.addColorStop(1, "rgba(255,140,30,0)");
         ctx.fillStyle = g;
-        ctx.beginPath(); ctx.arc(cx, cy, pr * 3, 0, 7); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx, cy, pr * 3.2, 0, 7); ctx.fill();
         ctx.fillStyle = "#ffe9c4";
         ctx.beginPath(); ctx.arc(cx, cy, pr * 0.55, 0, 7); ctx.fill();
         // label whale terbaru
@@ -149,12 +151,15 @@
           ctx.fillText("$" + (s.usd / 1000).toFixed(0) + "K", W - 10, 20 + ix * 16);
           ctx.globalAlpha = 1;
         });
-        // telemetri sudut
+        // HUD sudut: harga + meter energi
         var last = orbTicks.length ? orbTicks[orbTicks.length - 1] : 0;
-        ctx.fillStyle = "#eef3e6"; ctx.font = "bold 13px ui-monospace,monospace"; ctx.textAlign = "left";
-        ctx.fillText(last ? last.toLocaleString("en-US") : "BTC", 10, 20);
+        ctx.fillStyle = "#eef3e6"; ctx.font = "bold 14px ui-monospace,monospace"; ctx.textAlign = "left";
+        ctx.fillText(last ? last.toLocaleString("en-US") : "BTC", 10, 22);
         ctx.fillStyle = "rgba(238,243,230,.6)"; ctx.font = "9px ui-monospace,monospace";
-        ctx.fillText("ORBITAL · LIVE", 10, H - 10);
+        var eb = Math.round(orbPulse * 100);
+        ctx.fillText("NRG " + eb + "%", 10, H - 10);
+        ctx.fillStyle = "rgba(180,255,57,.5)";
+        ctx.fillRect(10, H - 7, 60 * Math.min(1, orbPulse), 2);
       }
     } catch (err) {}
     requestAnimationFrame(orbitalLoop);
