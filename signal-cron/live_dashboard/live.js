@@ -236,33 +236,34 @@
       });
     });
   }, 4000);
-  var TAPE = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT"], tapeLast = {};
+  var TAPE = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT"], tapeLast = {}, tapeQ = [];
   setInterval(function () {
     TAPE.forEach(function (s) {
       jget(API + "/api/v3/aggTrades?symbol=" + s + "&limit=6", function (t) {
         if (!t || !t.length) return;
-        var si = document.getElementById("streamInner");
-        if (!si) return;
-        var rows = [];
         t.forEach(function (x) {
           if ((tapeLast[s] || 0) >= x.a) return;
           tapeLast[s] = Math.max(tapeLast[s] || 0, x.a);
           var usd = parseFloat(x.q) * parseFloat(x.p);
           var big = usd >= 50000 ? " <b>WHALE</b>" : "";
-          rows.push('<div class="trow fresh"><span class="t">' + s.replace("USDT", "") + "</span>" +
-            '<span class="' + (x.m ? "dn" : "up") + '">' + parseFloat(x.p).toLocaleString("en-US") +
-            "</span> $" + (usd >= 1000 ? (usd / 1000).toFixed(1) + "K" : usd.toFixed(0)) + big + "</div>");
+          tapeQ.push({s: s, m: !!x.m, p: parseFloat(x.p), usd: usd, big: big, a: x.a});
         });
-        rows.forEach(function (html) {
-          var tmp = document.createElement("div");
-          tmp.innerHTML = html;
-          var node = tmp.firstChild;
-          si.insertBefore(node, si.firstChild);
-        });
-        while (si.children.length > 40) si.removeChild(si.lastChild);
+        if (tapeQ.length > 60) tapeQ = tapeQ.slice(-60);
       });
     });
   }, 1000);
+  // konsumen: 1 baris per 250ms -> turun berurutan, bukan lompat
+  setInterval(function () {
+    var si = document.getElementById("streamInner");
+    if (!si || !tapeQ.length) return;
+    var x = tapeQ.shift();
+    var tmp = document.createElement("div");
+    tmp.innerHTML = '<div class="trow fresh"><span class="t">' + x.s.replace("USDT", "") + "</span>" +
+      '<span class="' + (x.m ? "dn" : "up") + '">' + x.p.toLocaleString("en-US") +
+      "</span> $" + (x.usd >= 1000 ? (x.usd / 1000).toFixed(1) + "K" : x.usd.toFixed(0)) + x.big + "</div>";
+    si.insertBefore(tmp.firstChild, si.firstChild);
+    while (si.children.length > 40) si.removeChild(si.lastChild);
+  }, 250);
   var falls = [], lastTid = 0;
   setInterval(function () {
     jget(API + "/api/v3/aggTrades?symbol=" + SYM + "&limit=30", function (t) {
