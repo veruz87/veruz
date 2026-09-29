@@ -355,6 +355,17 @@ def write_feed(st, market):
     }
     with open(FEED, "w", encoding="utf-8") as f:
         json.dump(feed, f)
+    # export CSV riwayat trade (di-commit tiap run -> arsip mingguan otomatis via git)
+    try:
+        import csv
+        os.makedirs(os.path.join(HERE, "results"), exist_ok=True)
+        with open(os.path.join(HERE, "results", "paper_trades.csv"), "w", newline="", encoding="utf-8") as f:
+            w = csv.writer(f)
+            w.writerow(["time", "sym", "tf", "reason", "pnl"])
+            for t in st["trades"]:
+                w.writerow([t.get("time"), t.get("sym"), t.get("tf"), t.get("reason"), t.get("pnl")])
+    except Exception as e:
+        print("export csv gagal:", e, flush=True)
 
 
 def market_snapshot():

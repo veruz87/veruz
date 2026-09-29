@@ -18,6 +18,6 @@ jobs:
       - run: |
           git config user.name "paper-bot"
           git config user.email "paper-bot@local"
-          git add signal-cron/paper_live_state.json signal-cron/live_data.json
+          git add signal-cron/paper_live_state.json signal-cron/live_data.json signal-cron/results/paper_trades.csv
           git diff --cached --quiet || git commit -m "paper update $(date -u +%FT%TZ)"
           git push
