@@ -91,33 +91,42 @@
         var W = f.W, H = f.H;
         ctx.fillStyle = "rgba(5,4,3,.3)";
         ctx.fillRect(0, 0, W, H);
-        var cx = W / 2, cy = H / 2, R = Math.min(W, H) * 0.44;
+        var cx = W / 2, cy = H / 2, R = Math.min(W, H) * 0.48;
         spPulse = Math.max(0.1, spPulse * 0.978);
         var t = Date.now() / 1000, rot = t * (0.25 + spPulse * 0.5), j;
-        // 3 lengan spiral logaritmik + titik api
+        // 3 lengan x 2.5 putaran penuh, radius 0 -> Rm (terverifikasi)
+        ctx.globalCompositeOperation = "lighter";
         SPARMS.forEach(function (A, ai) {
-          var pts = 90, k;
-          ctx.lineWidth = 1.4;
+          var pts = 130, k, THMAX = 2.5 * Math.PI * 2;
           for (k = 0; k < pts; k++) {
-            var th = k / pts * Math.PI * 4.2 + rot * (ai % 2 ? 1 : -1) + A.off;
-            var rr = R * 0.12 * Math.exp(0.22 * (k / pts * 4.2)) * (1 + spPulse * 0.25);
-            var x = cx + Math.cos(th) * rr, y = cy + Math.sin(th) * rr * 0.8;
-            var hot = 0.35 + 0.65 * (k / pts);
-            ctx.fillStyle = "rgba(" + A.c[0] + "," + A.c[1] + "," + A.c[2] + "," + (0.25 + hot * 0.6).toFixed(2) + ")";
-            ctx.shadowColor = "rgb(" + A.c[0] + "," + A.c[1] + "," + A.c[2] + ")";
-            ctx.shadowBlur = 4 + hot * 8 * (0.5 + spPulse);
-            ctx.beginPath(); ctx.arc(x, y, 0.8 + hot * 2.2, 0, 7); ctx.fill();
+            var fr = k / (pts - 1);
+            var th = fr * THMAX + rot + A.off;
+            var rr = R * Math.pow(fr, 0.9) * (1 + spPulse * 0.12);
+            var x = cx + Math.cos(th) * rr, y = cy + Math.sin(th) * rr * 0.82;
+            var hot = 0.3 + 0.7 * fr;
+            ctx.fillStyle = "rgba(" + A.c[0] + "," + A.c[1] + "," + A.c[2] + "," + (0.3 + hot * 0.6).toFixed(2) + ")";
+            ctx.beginPath(); ctx.arc(x, y, 0.9 + hot * 2.4, 0, 7); ctx.fill();
           }
-          ctx.shadowBlur = 0;
         });
         // inti
         var pr = R * 0.1 * (1 + spPulse * 0.9);
+        ctx.globalCompositeOperation = "source-over";
         var g = ctx.createRadialGradient(cx, cy, 1, cx, cy, pr * 3.4);
         g.addColorStop(0, "rgba(255,225,170,.95)");
         g.addColorStop(0.4, "rgba(255,160,50,.5)");
         g.addColorStop(1, "rgba(255,140,30,0)");
         ctx.fillStyle = g;
         ctx.beginPath(); ctx.arc(cx, cy, pr * 3.4, 0, 7); ctx.fill();
+        ctx.fillStyle = "#ffe9c4";
+        ctx.beginPath(); ctx.arc(cx, cy, pr * 0.55, 0, 7); ctx.fill();
+        // grain + vignette sinematik
+        ctx.fillStyle = "rgba(255,255,255,.045)";
+        for (var gi = 0; gi < 45; gi++) ctx.fillRect(Math.random() * W, Math.random() * H, 1, 1);
+        var vg = ctx.createRadialGradient(cx, cy, R * 0.5, cx, cy, Math.max(W, H) * 0.72);
+        vg.addColorStop(0, "rgba(0,0,0,0)");
+        vg.addColorStop(1, "rgba(0,0,0,.68)");
+        ctx.fillStyle = vg;
+        ctx.fillRect(0, 0, W, H);
         // label pil whale melayang
         var now = Date.now();
         spWhales = spWhales.filter(function (s) { return now - s.t < 12000; });
@@ -126,6 +135,8 @@
           var x = s.x * W, y = s.y * H - age * 40;
           var txt = (s.sell ? "whale sell " : "whale buy ") + "$" + (s.usd / 1000).toFixed(0) + "K";
           ctx.globalAlpha = 1 - age;
+          ctx.strokeStyle = s.sell ? "rgba(255,77,94,.7)" : "rgba(180,255,57,.7)";
+          ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(x, y - 8); ctx.stroke();
           ctx.font = "bold 9px ui-monospace,monospace";
           var tw = ctx.measureText(txt).width + 14;
           ctx.fillStyle = s.sell ? "rgba(255,77,94,.85)" : "rgba(180,255,57,.85)";
