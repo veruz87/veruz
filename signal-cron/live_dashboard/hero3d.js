@@ -2,8 +2,40 @@
    Data: aggTrades BTC real. Gagal CDN/WebGL = pesan fallback. */
 (function () {
   function fail(msg) {
-    var el = document.getElementById("hero3d");
-    if (el) el.innerHTML = '<div style="color:#8a937f;font:11px monospace;padding:20px">' + msg + "</div>";
+    fallback2d(el || document.getElementById("hero3d"), "HERO");
+  }
+  function fallback2d(elm, label) {
+    if (!elm) return;
+    var cv = document.createElement("canvas");
+    cv.style.cssText = "position:absolute;inset:0;width:100%;height:100%";
+    elm.style.position = "relative";
+    elm.appendChild(cv);
+    var dots = [], i;
+    for (i = 0; i < 90; i++) dots.push({a: Math.random() * 7, r: 0.3 + Math.random() * 0.55,
+      sp: 0.002 + Math.random() * 0.005, s: 1 + Math.random() * 2});
+    var ang = 0;
+    (function loop() {
+      requestAnimationFrame(loop);
+      var r = elm.getBoundingClientRect();
+      if (r.width < 10) return;
+      var dpr = window.devicePixelRatio || 1;
+      cv.width = r.width * dpr; cv.height = r.height * dpr;
+      var ctx = cv.getContext("2d");
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.fillStyle = "rgba(0,0,0,.35)";
+      ctx.fillRect(0, 0, r.width, r.height);
+      var cx = r.width / 2, cy = r.height / 2, R = Math.min(r.width, r.height) * 0.4;
+      ang += 0.004;
+      ctx.strokeStyle = "rgba(180,255,57,.3)";
+      ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.stroke();
+      dots.forEach(function (d) {
+        d.a += d.sp;
+        ctx.fillStyle = "#b4ff39";
+        ctx.beginPath(); ctx.arc(cx + Math.cos(d.a + ang) * R * d.r, cy + Math.sin(d.a + ang) * R * d.r * 0.8, d.s, 0, 7); ctx.fill();
+      });
+      ctx.fillStyle = "rgba(238,243,230,.7)"; ctx.font = "9px monospace"; ctx.textAlign = "left";
+      ctx.fillText(label + " · 2D", 10, r.height - 10);
+    })();
   }
   if (!window.THREE) { fail("3D offline (CDN)"); return; }
   var el = document.getElementById("hero3d");

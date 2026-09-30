@@ -123,7 +123,7 @@
       '<span class="' + (x.m ? "dn" : "up") + '">' + x.p.toLocaleString("en-US") +
       "</span> $" + (x.usd >= 1000 ? (x.usd / 1000).toFixed(1) + "K" : x.usd.toFixed(0)) + x.big + "</div>";
     si.insertBefore(tmp.firstChild, si.firstChild);
-    while (si.children.length > 40) si.removeChild(si.lastChild);
+    while (si.children.length > 25) si.removeChild(si.lastChild);
   }, 250);
   var falls = [], lastTid = 0;
   setInterval(function () {
