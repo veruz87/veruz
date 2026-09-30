@@ -42,6 +42,10 @@
         "FUND BTC " + (fr >= 0 ? "+" : "") + (fr * 100).toFixed(4) + "%";
     }
     $("clock").textContent = d.updated ? d.updated + " WIB" : "--:--:--";
+    try {
+      var bt = document.getElementById("buildTag");
+      if (bt) bt.textContent = "build " + document.lastModified;
+    } catch (e) {}
 
     // TOP MOVERS: 5 paling ekstrem + HEATMAP 21 tile (data real feed)
     var mk = (d.market || []).slice();
