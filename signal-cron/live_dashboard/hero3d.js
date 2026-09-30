@@ -6,6 +6,10 @@
   }
   function fallback2d(elm, label) {
     if (!elm) return;
+    try {
+      var vt = document.getElementById("vidTag");
+      if (vt) vt.textContent = "LIVE FEED · 2D";
+    } catch (e2) {}
     var cv = document.createElement("canvas");
     cv.style.cssText = "position:absolute;inset:0;width:100%;height:100%";
     elm.style.position = "relative";
@@ -48,6 +52,10 @@
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
   renderer.setSize(W, H);
   el.appendChild(renderer.domElement);
+  try {
+    var vt = document.getElementById("vidTag");
+    if (vt) vt.textContent = "LIVE FEED · 3D";
+  } catch (e2) {}
   var scene = new THREE.Scene();
   var camera = new THREE.PerspectiveCamera(50, W / H, 0.1, 100);
   camera.position.set(0, 0.7, 5.2);
