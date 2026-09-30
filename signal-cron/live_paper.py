@@ -350,6 +350,8 @@ def write_feed(st, market):
         "positions": [{"sym": k.split("_")[0], "tf": k.split("_")[1], "entry": p["entry"],
                        "mark": market.get((k.split("_")[0], "px"), p["entry"]),
                        "sl": p["sl"], "lev": 1, "dep": p.get("dep", 0)} for k, p in st["positions"].items()],
+        "sleeves": [{"sym": k.split("_")[0], "tf": k.split("_")[1],
+                     "eq": round(v, 2)} for k, v in sorted(st["equity"].items())],
         "log": st["trades"][-30:][::-1],
         "equityCurve": st.get("eqhist", []), "scan": st.get("scan", [])[-24:][::-1], "wire": [],
     }

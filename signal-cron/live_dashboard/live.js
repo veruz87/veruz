@@ -6,7 +6,16 @@
   var DSS_SYMS = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT", "DOGEUSDT"];
 
   function jget(url, cb) {
-    fetch(url).then(function (r) { return r.json(); }).then(cb).catch(function () {});
+    fetch(url).then(function (r) {
+      if (!r.ok) throw 0;
+      return r.json();
+    }).then(cb).catch(function () {
+      // fallback base kedua (geo-block salah satu host)
+      var alt = url.indexOf("data-api.binance.vision") >= 0
+        ? url.replace("data-api.binance.vision", "api.binance.com")
+        : url.replace("api.binance.com", "data-api.binance.vision");
+      if (alt !== url) fetch(alt).then(function (r) { return r.json(); }).then(cb).catch(function () {});
+    });
   }
 
   // (bola 3D dicabut dari ORBIT: diganti neural burst)

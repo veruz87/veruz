@@ -100,6 +100,8 @@ header{grid-column:1/-1;display:flex;align-items:center;gap:18px;border:1px soli
 #rightRail #pScan{flex:0 0 200px}
 #posTable2{font-size:12px}
 #posTable2 td{padding:7px 8px}
+#slvGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;max-height:220px;overflow-y:auto}
+#slvGrid .slv{font-size:10px;color:#cfe0b8;background:rgba(180,255,57,.06);padding:4px 5px;white-space:nowrap}
 #pChart{flex:0 0 250px}
 #pScan{flex:1;min-height:120px}
 #pScan #stream{overflow-y:auto;flex:1}

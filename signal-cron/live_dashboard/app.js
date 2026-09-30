@@ -104,7 +104,19 @@
     if (!(d.positions || []).length)
       p2 += '<tr><td colspan="3" style="text-align:center;color:var(--dim)">FLAT</td></tr>';
     var p2el = document.getElementById("posTable2");
-    if (p2el) p2el.innerHTML = p2;
+    if (p2el) {
+      if ((d.positions || []).length) {
+        p2el.innerHTML = p2;
+      } else {
+        // FLAT: grid equity 42 sleeve (data real) agar panel tetap hidup
+        var g = '<tr><th colspan="4">SLEEVES / EQ</th></tr><tr><td colspan="4"><div id="slvGrid">';
+        (d.sleeves || []).forEach(function (s) {
+          g += '<span class="slv">' + s.sym.replace("USDT", "") + " " + s.tf + " $" + s.eq.toFixed(2) + "</span>";
+        });
+        g += "</div></td></tr>";
+        p2el.innerHTML = g;
+      }
+    }
     // THE WIRE: whale + likuidasi real (data real feed)
     var wr = "";
     (d.wire || []).forEach(function (w) {
