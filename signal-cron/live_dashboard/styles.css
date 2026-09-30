@@ -96,8 +96,6 @@ header{grid-column:1/-1;display:flex;align-items:center;gap:18px;border:1px soli
 /* kanan */
 #rightRail{display:flex;flex-direction:column;gap:10px;overflow:hidden;min-height:0}
 #rightRail .panel{flex-shrink:0}
-#rightRail #pPos{flex:1;overflow-y:auto}
-#rightRail #pScan{flex:0 0 200px}
 #posTable2{font-size:12px}
 #posTable2 td{padding:7px 8px}
 #slvGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;max-height:220px;overflow-y:auto}
