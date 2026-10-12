@@ -2,3 +2,18 @@
 !signal-cron/results/paper_trades.csv
 __pycache__/
 *.pyc
+# data + arsip lokal (jangan masuk git, bikin VS Code berat)
+data-backtest/
+scalp-backtest/
+*.zip
+*.pdf
+*.dwg
+*.dxf
+*.docx
+*.mp4
+plot.log
+hidden-gems-indo/
+quant-journal-hud/
+mepscope/
+YNOMEP/
+NN-MEP_ELEKTRIKAL/
