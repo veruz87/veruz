@@ -5,15 +5,22 @@ __pycache__/
 # data + arsip lokal (jangan masuk git, bikin VS Code berat)
 data-backtest/
 scalp-backtest/
-*.zip
-*.pdf
-*.dwg
-*.dxf
-*.docx
-*.mp4
-plot.log
+Aset Library/
+Aurecodex/
+assets-film-lab/
+aurecodex-kit/
+football-analysis-kit/
+notion-os-template/
+portofolio-rangga/
 hidden-gems-indo/
 quant-journal-hud/
 mepscope/
 YNOMEP/
 NN-MEP_ELEKTRIKAL/
+/*.py
+/*.pdf
+/*.pine
+/*.log
+/*.docx
+/*.dwg
+/*.mp4
